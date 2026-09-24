@@ -3,6 +3,15 @@
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
+
+if [ -z "${DEVELOPER_DIR:-}" ]; then
+    SELECTED_DEVELOPER_DIR="$(xcode-select -p 2>/dev/null || true)"
+    if [ "$SELECTED_DEVELOPER_DIR" = "/Library/Developer/CommandLineTools" ] \
+        && [ -d "/Applications/Xcode.app/Contents/Developer" ]; then
+        export DEVELOPER_DIR="/Applications/Xcode.app/Contents/Developer"
+    fi
+fi
+
 SDK="$(xcrun --show-sdk-path --sdk macosx)"
 OUT="$(mktemp -d "${TMPDIR:-/tmp}/nook-editor-tests.XXXXXX")"
 trap 'rm -rf "$OUT"' EXIT
