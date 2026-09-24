@@ -38,17 +38,17 @@
 "edge.left" = "Left";
 "edge.right" = "Right";
 
-"export.archive_filename" = "Noty Archive-%@.stickies";
+"export.archive_filename" = "Nook Archive-%@.stickies";
 "export.choose_folder" = "Choose a folder for %ld %@ files.";
 "export.default_note_name" = "note-%@";
-"export.document_title" = "Noty export";
+"export.document_title" = "Nook export";
 "export.empty_body" = "There are no notes yet.";
 "export.empty_title" = "Nothing to export";
 "export.failed_title" = "Export failed";
 "export.here" = "Export Here";
 "export.incomplete_body" = "Wrote %1$ld of %2$@. See Console for details.";
 "export.incomplete_title" = "Export incomplete";
-"export.markdown_filename" = "Noty Export-%@.md";
+"export.markdown_filename" = "Nook Export-%@.md";
 "export.markdown_per_note" = "Markdown (one file per note)…";
 "export.metadata" = "%1$@ · created %2$@ · modified %3$@%4$@";
 "export.metadata_archived_suffix" = " · archived";
@@ -92,12 +92,10 @@
 "library.search_placeholder" = "Search all notes";
 "library.select_note" = "Select a note";
 
-"menu.about" = "About Noty";
+"menu.about" = "About Nook";
 "menu.all_notes" = "All Notes";
 "menu.archive" = "Archive";
 "menu.bigger_text" = "Bigger Text";
-"menu.check_automatically" = "Check automatically";
-"menu.check_for_updates" = "Check for Updates…";
 "menu.copy" = "Copy";
 "menu.cut" = "Cut";
 "menu.deck_size" = "Deck size";
@@ -106,7 +104,7 @@
 "menu.dock_left" = "Dock deck to left edge";
 "menu.edit" = "Edit";
 "menu.export" = "Export";
-"menu.hide" = "Hide Noty";
+"menu.hide" = "Hide Nook";
 "menu.import" = "Import…";
 "menu.insert_image" = "Insert Image…";
 "menu.keep_deck_open" = "Keep deck open";
@@ -114,7 +112,7 @@
 "menu.new_note" = "New Note";
 "menu.note_font" = "Note font";
 "menu.paste" = "Paste";
-"menu.quit" = "Quit Noty";
+"menu.quit" = "Quit Nook";
 "menu.redo" = "Redo";
 "menu.select_all" = "Select All";
 "menu.settings" = "Settings…";
@@ -154,7 +152,7 @@
 "settings.deck.one_space" = "Stay on one Space";
 "settings.deck.one_space_help" = "Notes and the deck stop following you to every Space — they stay where they are, like stickies on one desk.";
 "settings.deck.language" = "Language";
-"settings.deck.language_help" = "Noty restarts automatically when you change the language.";
+"settings.deck.language_help" = "Nook restarts automatically when you change the language.";
 "settings.deck.size" = "Size";
 "settings.deck.size_help" = "Scales the tabs, their labels, the chips and the resting pill together.";
 "settings.deck.style" = "Style";
@@ -188,14 +186,7 @@
 "settings.sync.sync_now" = "Sync Now";
 "settings.sync.tab" = "Sync";
 "settings.sync.unavailable_help" = "Sign in to iCloud and turn on iCloud Drive in System Settings.";
-"settings.updates.automatic" = "Check for updates automatically";
-"settings.updates.caption" = "Noty fetches one file to see whether a newer version exists.";
-"settings.updates.check_now" = "Check Now";
-"settings.updates.privacy" = "Fetching appcast.xml is the only network request Noty ever makes — no accounts, no analytics, and nothing about a note leaves the Mac. Every update is checked against the EdDSA public key in the app; one signed by any other key is refused.";
-"settings.updates.tab" = "Updates";
-"settings.updates.this_copy" = "This copy";
-"settings.updates.version" = "Noty %1$@  (build %2$@)";
-"settings.window_title" = "Noty Settings";
+"settings.window_title" = "Nook Settings";
 
 "shortcut.all_notes" = "All Notes";
 "shortcut.archive_note" = "Archive note";
@@ -215,14 +206,7 @@
 
 "undo.note_deleted" = "Note deleted";
 
-"updates.install_sparkle" = "Run ./scripts/fetch-sparkle.sh and rebuild to add the updater.";
-"updates.last_checked" = "Last checked %@.";
-"updates.no_sparkle_status" = "This build has no Sparkle framework, so it cannot update itself.";
-"updates.not_checked" = "No check yet.";
-"updates.unavailable_body" = "This copy of Noty was built without the Sparkle framework. Run ./scripts/fetch-sparkle.sh and rebuild to enable automatic updates.";
-"updates.unavailable_title" = "Updates are not available in this build";
-
-"welcome.note_body" = "Welcome to Noty\n\nYour notes live at the edge of the screen. Slide the pointer to the right edge and the deck fans out.\n\n⌥⌘N  new note\n⌥⌘A  all notes\n⌥⌘L  archive\n\nInside a note: Esc closes, ⌘F finds, ⌘. cycles the colour, ⌘⌫ deletes with ten seconds to undo.";
+"welcome.note_body" = "Welcome to Nook\n\nYour notes live at the edge of the screen. Slide the pointer to the right edge and the deck fans out.\n\n⌥⌘N  new note\n⌥⌘A  all notes\n⌥⌘L  archive\n\nInside a note: Esc closes, ⌘F finds, ⌘. cycles the colour, ⌘⌫ deletes with ten seconds to undo.";
 
 "width.narrow" = "Narrow";
 "width.standard" = "Standard";
@@ -231,10 +215,10 @@
 
 /* Storage recovery */
 "storage.invalid_key" = "The encryption key is invalid. It has not been replaced.";
-"storage.missing_key" = "The encryption key for your existing notes is missing. Restore the original note.key file before reopening Noty.";
+"storage.missing_key" = "The encryption key for your existing notes is missing. Restore the original note.key file before reopening Nook.";
 "storage.corrupt_body" = "A note could not be decrypted. Editing is disabled to protect the original data.";
 "storage.invalid_color" = "The imported note has an invalid colour value.";
-"storage.error_title" = "Noty could not read or save your notes";
-"storage.error_help" = "Your original data has been kept. Unsaved edits remain in this session. Resolve the storage problem and try again; Noty will retry saving before quitting.";
+"storage.error_title" = "Nook could not read or save your notes";
+"storage.error_help" = "Your original data has been kept. Unsaved edits remain in this session. Resolve the storage problem and try again; Nook will retry saving before quitting.";
 "storage.import_unsaved" = "Some imported notes could not be saved.";
 "import.invalid_archive" = "This archive is invalid or uses an unsupported version.";

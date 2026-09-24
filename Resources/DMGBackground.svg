@@ -17,7 +17,7 @@
   <rect width="400" height="400" fill="url(#paper)"/>
   <path d="M0 265 C80 345 135 375 270 400 L0 400 Z" fill="url(#wave)" opacity=".72"/>
   <path d="M0 305 C75 365 135 390 220 400 L0 400 Z" fill="#c8b5ff" opacity=".55"/>
-  <text x="200" y="65" text-anchor="middle" font-family="Helvetica Neue, Helvetica, sans-serif" font-size="15" fill="#17151d">To install, drag &amp; drop Noty</text>
+  <text x="200" y="65" text-anchor="middle" font-family="Helvetica Neue, Helvetica, sans-serif" font-size="15" fill="#17151d">To install, drag &amp; drop Nook</text>
   <text x="200" y="85" text-anchor="middle" font-family="Helvetica Neue, Helvetica, sans-serif" font-size="15" fill="#17151d">into the Applications folder.</text>
   <g fill="none" stroke="url(#arrow)" stroke-width="6" stroke-linecap="round" stroke-linejoin="round">
     <path d="M168 195 l12 12 -12 12"/>

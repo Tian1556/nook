@@ -1,14 +1,14 @@
 #!/bin/bash
-# Packages build/Noty.app into a drag-to-Applications disk image.
+# Packages build/Nook.app into a drag-to-Applications disk image.
 #   ./scripts/make-dmg.sh [version]
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
-APP="$ROOT/build/Noty.app"
+APP="$ROOT/build/Nook.app"
 VERSION="${1:-${MARKETING_VERSION:-1.0.0}}"
 SUFFIX="${DMG_SUFFIX:-}"
-DMG="$ROOT/build/Noty-${VERSION}${SUFFIX}.dmg"
-RW_DMG="$ROOT/build/.Noty-${VERSION}${SUFFIX}-rw.dmg"
+DMG="$ROOT/build/Nook-${VERSION}${SUFFIX}.dmg"
+RW_DMG="$ROOT/build/.Nook-${VERSION}${SUFFIX}-rw.dmg"
 
 [ -d "$APP" ] || { echo "no app at $APP — run ./build.sh first" >&2; exit 1; }
 
@@ -21,7 +21,7 @@ ln -s /Applications "$STAGE/Applications"
 # Create a writable image first so Finder can save the window layout in .DS_Store.
 rm -f "$DMG" "$RW_DMG"
 hdiutil create \
-    -volname "Noty_${VERSION}" \
+    -volname "Nook_${VERSION}" \
     -srcfolder "$STAGE" \
     -ov -format UDRW \
     -fs HFS+ \
@@ -56,7 +56,7 @@ on run argv
         set icon size of iconOptions to 72
         set text size of iconOptions to 14
         set background picture of iconOptions to (POSIX file (volumePath & "/.background/background.png") as alias)
-        set position of item "Noty.app" of volumeFolder to {95, 235}
+        set position of item "Nook.app" of volumeFolder to {95, 235}
         set position of item "Applications" of volumeFolder to {305, 235}
         try
             close volumeWindow
