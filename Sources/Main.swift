@@ -1,7 +1,7 @@
 import AppKit
 
 @main
-enum NotyMain {
+enum NookMain {
     /// NSApplication.delegate is unowned — hold the delegate here for the process lifetime.
     private static let delegate = AppDelegate()
 

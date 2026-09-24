@@ -2,7 +2,7 @@ import Foundation
 import AppKit
 
 /// Images referenced from note bodies live as plain files under
-/// `Application Support/Noty/Images`, one `<UUID>.png` (or original ext) per
+/// `Application Support/Nook/Images`, one `<UUID>.png` (or original ext) per
 /// image, with the note text holding only a `![image](noty-img://<UUID>)`
 /// token. Keeping bytes out of SQLite keeps the encrypted database small and
 /// lets a single image be shared across notes.

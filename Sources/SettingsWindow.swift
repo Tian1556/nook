@@ -118,11 +118,6 @@ final class SettingsModel: ObservableObject {
     @Published var confineToSpace: Bool { didSet { Settings.confineToSpace = confineToSpace; apply() } }
     @Published var launchAtLogin: Bool  { didSet { Settings.launchAtLogin = launchAtLogin } }
 
-    @Published var autoUpdate: Bool {
-        didSet { guard !loading else { return }; Updater.shared.automaticallyChecks = autoUpdate }
-    }
-    @Published var updateStatus: String = ""
-
     @Published var fontName: String     { didSet { Settings.noteFontName = fontName; apply() } }
     @Published var fontSize: Double     { didSet { Settings.noteFontSize = fontSize; apply() } }
     @Published var markdown: Bool       { didSet { Settings.markdownStyling = markdown; apply() } }
@@ -174,7 +169,6 @@ final class SettingsModel: ObservableObject {
         overFullScreen = Settings.showOverFullScreen
         confineToSpace = Settings.confineToSpace
         launchAtLogin = Settings.launchAtLogin
-        autoUpdate = Updater.available && Updater.shared.automaticallyChecks
         fontName = Settings.noteFontName
         fontSize = Settings.noteFontSize
         markdown = Settings.markdownStyling
@@ -196,7 +190,6 @@ final class SettingsModel: ObservableObject {
         scBigger = Settings.scBigger
         scSmaller = Settings.scSmaller
         loading = false
-        refreshUpdateStatus()
         refreshSyncStatus()
 
         NotificationCenter.default.addObserver(
@@ -220,20 +213,6 @@ final class SettingsModel: ObservableObject {
     private func apply() {
         guard !loading else { return }
         (NSApp.delegate as? AppDelegate)?.refreshDecks()
-    }
-
-    func refreshUpdateStatus() {
-        guard Updater.available else {
-            updateStatus = L10n.text("updates.no_sparkle_status")
-            return
-        }
-        guard let last = Updater.shared.lastCheck else {
-            updateStatus = L10n.text("updates.not_checked")
-            return
-        }
-        let f = RelativeDateTimeFormatter()
-        f.unitsStyle = .full
-        updateStatus = L10n.format("updates.last_checked", f.localizedString(for: last, relativeTo: Date()))
     }
 
     func refreshSyncStatus() {
@@ -262,16 +241,7 @@ final class SettingsModel: ObservableObject {
         NSWorkspace.shared.activateFileViewerSelecting([CloudFolder.url])
     }
 
-    func checkForUpdatesNow() {
-        Updater.shared.checkForUpdates()
-        // Sparkle stamps the date when its own check finishes, not when it is
-        // asked, so the status line has to be read back a moment later.
-        DispatchQueue.main.asyncAfter(deadline: .now() + 2) { [weak self] in
-            self?.refreshUpdateStatus()
-        }
-    }
-
-    /// Warn about a combination already used by another Noty shortcut.
+    /// Warn about a combination already used by another Nook shortcut.
     func duplicate(of s: Shortcut, ignoring label: String) -> Bool {
         guard s.isSet else { return false }
         let others = [("new", scNewNote), ("all", scAllNotes), ("archive", scArchive),
@@ -328,8 +298,7 @@ struct SettingsView: View {
 
     var body: some View {
         // One long scroll made twelve shortcut fields, nine deck controls and the
-        // note settings compete for the same eye. Tabs are what a Settings window
-        // is supposed to be, and they leave somewhere obvious to put updates.
+        // note settings compete for the same eye. Tabs keep those groups distinct.
         TabView {
             pane { shortcutsTab }
                 .tabItem { Label(L10n.text("settings.shortcuts.tab"), systemImage: "command") }
@@ -339,8 +308,6 @@ struct SettingsView: View {
                 .tabItem { Label(L10n.text("settings.notes.tab"), systemImage: "textformat") }
             pane { syncTab }
                 .tabItem { Label(L10n.text("settings.sync.tab"), systemImage: "icloud") }
-            pane { updatesTab }
-                .tabItem { Label(L10n.text("settings.updates.tab"), systemImage: "arrow.triangle.2.circlepath") }
         }
         .frame(width: 600, height: 500)
     }
@@ -564,39 +531,6 @@ struct SettingsView: View {
         }
     }
 
-    @ViewBuilder
-    private var updatesTab: some View {
-        Section {
-            LabeledContent(L10n.text("settings.updates.this_copy")) {
-                Text(Self.versionString)
-                    .font(.system(size: 12.5).monospacedDigit())
-            }
-            toggleRow(L10n.text("settings.updates.automatic"),
-                      help: model.updateStatus,
-                      isOn: $model.autoUpdate,
-                      disabled: !Updater.available)
-            HStack(spacing: 10) {
-                Button(L10n.text("settings.updates.check_now")) { model.checkForUpdatesNow() }
-                    .disabled(!Updater.available)
-                if !Updater.available {
-                    Text(L10n.text("updates.install_sparkle"))
-                        .font(.system(size: 11)).foregroundStyle(.secondary)
-                }
-            }
-        } header: {
-            Text(L10n.text("settings.updates.caption"))
-        } footer: {
-            Text(L10n.text("settings.updates.privacy"))
-        }
-    }
-
-    private static var versionString: String {
-        let info = Bundle.main.infoDictionary
-        let short = info?["CFBundleShortVersionString"] as? String ?? "?"
-        let build = info?["CFBundleVersion"] as? String ?? "?"
-        return L10n.format("settings.updates.version", short, build)
-    }
-
     // MARK: pieces
 
     /// One tab, laid out by the system: grouped form cells align every label
@@ -607,7 +541,6 @@ struct SettingsView: View {
         }
         .formStyle(.grouped)
         .onAppear {
-            model.refreshUpdateStatus()
             model.refreshSyncStatus()
         }
     }

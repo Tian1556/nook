@@ -1,6 +1,6 @@
 import Foundation
 
-/// The iCloud Drive folder Noty mirrors notes into.
+/// The iCloud Drive folder Nook mirrors notes into.
 ///
 /// This is a plain path, not a ubiquity container: a non-sandboxed app may read
 /// and write it with no iCloud entitlement, and the system's own daemon does the
@@ -8,7 +8,7 @@ import Foundation
 /// a paid developer account — see
 /// docs/superpowers/specs/2026-09-06-icloud-drive-sync.md.
 enum CloudFolder {
-    static let folderName = "Noty"
+    static let folderName = "Nook"
     static let fileExtension = "md"
 
     static var driveRoot: URL {
@@ -36,7 +36,7 @@ enum CloudFolder {
             try FileManager.default.createDirectory(at: url, withIntermediateDirectories: true)
             return true
         } catch {
-            NSLog("Noty cloud: cannot create \(url.path) — \(error.localizedDescription)")
+            NSLog("Nook cloud: cannot create \(url.path) — \(error.localizedDescription)")
             return false
         }
     }
@@ -94,7 +94,7 @@ enum CloudFolder {
         do {
             try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
         } catch {
-            NSLog("Noty cloud: cannot create the conflicts folder — \(error.localizedDescription)")
+            NSLog("Nook cloud: cannot create the conflicts folder — \(error.localizedDescription)")
             return false
         }
         return write(text, to: folder.appendingPathComponent(conflictName(for: fileName, at: Date())))
@@ -177,7 +177,7 @@ enum CloudFolder {
             text = try? String(contentsOf: url, encoding: .utf8)
         }
         if let coordinationError {
-            NSLog("Noty cloud: read \(file.lastPathComponent) — \(coordinationError.localizedDescription)")
+            NSLog("Nook cloud: read \(file.lastPathComponent) — \(coordinationError.localizedDescription)")
         }
         return text
     }
@@ -192,11 +192,11 @@ enum CloudFolder {
                 try text.write(to: url, atomically: true, encoding: .utf8)
                 ok = true
             } catch {
-                NSLog("Noty cloud: write \(url.lastPathComponent) — \(error.localizedDescription)")
+                NSLog("Nook cloud: write \(url.lastPathComponent) — \(error.localizedDescription)")
             }
         }
         if let coordinationError {
-            NSLog("Noty cloud: write \(file.lastPathComponent) — \(coordinationError.localizedDescription)")
+            NSLog("Nook cloud: write \(file.lastPathComponent) — \(coordinationError.localizedDescription)")
         }
         return ok
     }
@@ -211,11 +211,11 @@ enum CloudFolder {
                 try FileManager.default.removeItem(at: url)
                 ok = true
             } catch {
-                NSLog("Noty cloud: delete \(url.lastPathComponent) — \(error.localizedDescription)")
+                NSLog("Nook cloud: delete \(url.lastPathComponent) — \(error.localizedDescription)")
             }
         }
         if let coordinationError {
-            NSLog("Noty cloud: delete \(file.lastPathComponent) — \(coordinationError.localizedDescription)")
+            NSLog("Nook cloud: delete \(file.lastPathComponent) — \(coordinationError.localizedDescription)")
         }
         return ok
     }

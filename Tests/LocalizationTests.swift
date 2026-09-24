@@ -95,7 +95,7 @@ enum LocalizationTests {
     }
 
     private static func testLanguagePreference(check: Check) {
-        let suite = "app.noty.localization-tests.\(UUID().uuidString)"
+        let suite = "local.nook.localization-tests.\(UUID().uuidString)"
         guard let defaults = UserDefaults(suiteName: suite) else {
             check(false, "an isolated defaults suite must be available")
             return

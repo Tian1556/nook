@@ -67,7 +67,7 @@ enum NoteDocument {
     struct Parsed {
         var note: Note
         /// False when the file carried no `noty-id` — something a person created
-        /// on a phone that Noty has never seen. The caller gives it an id and
+        /// on a phone that Nook has never seen. The caller gives it an id and
         /// writes the file back with one.
         var hasIdentity: Bool
     }
@@ -112,7 +112,7 @@ enum NoteDocument {
     /// with a horizontal rule lost everything up to the next rule — and because
     /// such a file has no identity, `adopt` wrote the truncation straight back.
     /// A header must be entirely `key: value` lines and must carry at least one
-    /// key Noty itself writes.
+    /// key Nook itself writes.
     private static func splitHeader(_ text: String) -> ([(String, String)], String)? {
         let lines = text.components(separatedBy: "\n")
         guard lines.first?.trimmingCharacters(in: .whitespaces) == fence else { return nil }

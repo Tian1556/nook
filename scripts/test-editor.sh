@@ -4,7 +4,7 @@ set -euo pipefail
 
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 SDK="$(xcrun --show-sdk-path --sdk macosx)"
-OUT="$(mktemp -d "${TMPDIR:-/tmp}/noty-editor-tests.XXXXXX")"
+OUT="$(mktemp -d "${TMPDIR:-/tmp}/nook-editor-tests.XXXXXX")"
 trap 'rm -rf "$OUT"' EXIT
 
 APP_SOURCES=()

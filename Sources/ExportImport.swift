@@ -5,7 +5,7 @@ import UniformTypeIdentifiers
 
 struct StickyArchive: Codable {
     var version = 3
-    var app = "Noty"
+    var app = "Nook"
     var exported = Date()
     var notes: [StickyNote]
     /// Image id → base64 file bytes for every `noty-img` token used by `notes`,
@@ -83,7 +83,7 @@ enum Transfer {
                                         directory: dir, used: &used)
                 written += 1
             } catch {
-                NSLog("Noty export failed: \(error.localizedDescription)")
+                NSLog("Nook export failed: \(error.localizedDescription)")
             }
         }
         reveal(dir)

@@ -16,7 +16,7 @@ struct ReloadResume: Codable {
         do {
             try JSONEncoder().encode(resume).write(to: url, options: [.atomic])
         } catch {
-            NSLog("Noty: could not write reload resume — \(error.localizedDescription)")
+            NSLog("Nook: could not write reload resume — \(error.localizedDescription)")
         }
     }
 

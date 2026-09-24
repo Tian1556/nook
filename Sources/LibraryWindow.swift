@@ -38,7 +38,7 @@ final class LibraryWindow: NSObject, NSWindowDelegate {
             let w = NSWindow(contentRect: NSRect(x: 0, y: 0, width: 940, height: 580),
                              styleMask: [.titled, .closable, .miniaturizable, .resizable, .fullSizeContentView],
                              backing: .buffered, defer: false)
-            w.title = "Noty"
+            w.title = "Nook"
             w.titlebarAppearsTransparent = true
             w.isReleasedWhenClosed = false
             w.minSize = NSSize(width: 720, height: 420)

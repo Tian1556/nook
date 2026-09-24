@@ -19,12 +19,6 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             capture:  { QuickCapture.shared.toggle() }
         )
 
-        // Sparkle only schedules its background checks once the controller
-        // exists. Until now nothing touched it before the pill's context menu
-        // was opened, so a user who never right-clicked was never offered an
-        // update however long the app ran.
-        _ = Updater.shared
-
         // Off unless the user asked for it; reload() is a no-op when it is off.
         CloudSync.shared.reload()
     }
@@ -55,15 +49,15 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     @objc func openAllNotes() { LibraryWindow.shared.show(mode: .all) }
     @objc func quickCapture() { QuickCapture.shared.toggle() }
 
-    /// noty:// — the whole automation surface. The text only ever becomes note
+    /// nook:// — the whole automation surface. The text only ever becomes note
     /// content, never anything executed, so there is nothing here to harden
     /// beyond ignoring what we do not recognise.
-    ///   noty://new?text=…   create a note (no text → open quick capture)
-    ///   noty://capture      open the quick capture box
-    ///   noty://all          the All Notes window
-    ///   noty://settings     the Settings window
+    ///   nook://new?text=…   create a note (no text → open quick capture)
+    ///   nook://capture      open the quick capture box
+    ///   nook://all          the All Notes window
+    ///   nook://settings     the Settings window
     func application(_ application: NSApplication, open urls: [URL]) {
-        for url in urls where url.scheme == "noty" {
+        for url in urls where url.scheme == "nook" {
             let text = URLComponents(url: url, resolvingAgainstBaseURL: false)?
                 .queryItems?.first { $0.name == "text" }?.value ?? ""
             switch url.host {
@@ -148,12 +142,6 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     @objc func exportStickies()  { Transfer.export(.stickies,  notes: NoteStore.shared.notes) }
     @objc func importStickies()  { Transfer.importFiles() }
 
-    @objc func checkForUpdates() { Updater.shared.checkForUpdates() }
-
-    @objc func toggleAutoUpdates() {
-        Updater.shared.automaticallyChecks.toggle()
-    }
-
     @objc func quit() { NSApp.terminate(nil) }
 
     /// Bundle localization is fixed for the lifetime of a process. Launch the
@@ -186,7 +174,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
                                            configuration: configuration) { _, error in
             DispatchQueue.main.async {
                 if let error {
-                    NSLog("Noty: language-change relaunch failed — \(error.localizedDescription)")
+                    NSLog("Nook: language-change relaunch failed — \(error.localizedDescription)")
                     ReloadResume.clear()
                     Settings.appLanguage = previous
                     SettingsWindow.shared.syncPreferences()
@@ -218,7 +206,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     @objc func showAbout() {
         NSApp.activate()
         let a = NSAlert()
-        a.messageText = "Noty"
+        a.messageText = "Nook"
         a.informativeText = L10n.text("about.body")
         a.runModal()
     }
@@ -235,7 +223,6 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         let appItem = NSMenuItem()
         let appMenu = NSMenu()
         appMenu.addItem(withTitle: L10n.text("menu.about"), action: #selector(showAbout), keyEquivalent: "")
-        appMenu.addItem(withTitle: L10n.text("menu.check_for_updates"), action: #selector(checkForUpdates), keyEquivalent: "")
         appMenu.addItem(.separator())
         let newNoteItem = appMenu.addItem(withTitle: L10n.text("menu.new_note"), action: #selector(newNote), keyEquivalent: "n")
         let allNotesItem = appMenu.addItem(withTitle: L10n.text("menu.all_notes"), action: #selector(openAllNotes), keyEquivalent: "a")

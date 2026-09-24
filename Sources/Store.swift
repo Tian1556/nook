@@ -58,11 +58,11 @@ final class Store {
         sqlite3_finalize(st)
         if !existing.contains("pinned") {
             exec("ALTER TABLE notes ADD COLUMN pinned INTEGER NOT NULL DEFAULT 0;")
-            NSLog("Noty: migrated notes table — added pinned")
+            NSLog("Nook: migrated notes table — added pinned")
         }
         if !existing.contains("text_direction") {
             exec("ALTER TABLE notes ADD COLUMN text_direction TEXT NOT NULL DEFAULT 'automatic';")
-            NSLog("Noty: migrated notes table — added text direction")
+            NSLog("Nook: migrated notes table — added text direction")
         }
     }
 

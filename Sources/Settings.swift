@@ -1,7 +1,7 @@
 import Foundation
 import ServiceManagement
 
-/// The language macOS should use for Noty. `system` means there is no
+/// The language macOS should use for Nook. `system` means there is no
 /// application-specific override, so the normal language preference chain wins.
 enum AppLanguage: String, CaseIterable, Identifiable {
     case system
@@ -36,10 +36,10 @@ enum AppLanguage: String, CaseIterable, Identifiable {
 /// Thin UserDefaults wrapper for the handful of togglable preferences.
 enum Settings {
     private static let d = UserDefaults.standard
-    private static let applicationDomain = Bundle.main.bundleIdentifier ?? "app.noty.Noty"
+    private static let applicationDomain = Bundle.main.bundleIdentifier ?? "local.nook.Nook"
 
     /// Uses the same application-domain preference as macOS System Settings,
-    /// rather than maintaining a second Noty-only language setting.
+    /// rather than maintaining a second Nook-only language setting.
     static var appLanguage: AppLanguage {
         get { appLanguage(in: d, applicationDomain: applicationDomain) }
         set { setAppLanguage(newValue, in: d) }
@@ -290,7 +290,7 @@ enum Settings {
     static let fanIdleTimeout: TimeInterval = 4
     static let noteIdleTimeout: TimeInterval = 60
 
-    /// Stop Noty's windows from following the user to every Space: the deck
+    /// Stop Nook's windows from following the user to every Space: the deck
     /// and any floating notes stay on the Space they are on, like paper
     /// stickies on one desk. Off by default — the deck follows everywhere.
     static var confineToSpace: Bool {
@@ -378,7 +378,7 @@ enum Settings {
                 if newValue { try SMAppService.mainApp.register() }
                 else { try SMAppService.mainApp.unregister() }
             } catch {
-                NSLog("Noty: launch-at-login toggle failed — \(error.localizedDescription)")
+                NSLog("Nook: launch-at-login toggle failed — \(error.localizedDescription)")
             }
         }
     }

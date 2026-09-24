@@ -10,7 +10,7 @@ struct CloudSyncIndex: Codable {
         var syncedModified: Date
         /// The file's own modification date at that same moment. This, not the
         /// header, is what detects an edit made by an editor that knows nothing
-        /// about Noty's front-matter.
+        /// about Nook's front-matter.
         var fileModified: Date
     }
 
@@ -30,7 +30,7 @@ struct CloudSyncIndex: Codable {
         do {
             try Self.encoder.encode(self).write(to: url, options: .atomic)
         } catch {
-            NSLog("Noty cloud: cannot save the sync index — \(error.localizedDescription)")
+            NSLog("Nook cloud: cannot save the sync index — \(error.localizedDescription)")
         }
     }
 

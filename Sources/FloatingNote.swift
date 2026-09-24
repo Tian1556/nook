@@ -98,15 +98,15 @@ final class FloatingNote: NSObject, NSWindowDelegate {
 
     /// Clicking the note's tab on the deck lands here. The note may be an
     /// unpinned normal-level window buried under the active app, and a plain
-    /// makeKey only fronts it within Noty — orderFrontRegardless is what lifts
+    /// makeKey only fronts it within Nook — orderFrontRegardless is what lifts
     /// it above the app you are actually in.
     func focus() {
         lastActivity = Date()
         guard let panel else {
-            NSLog("Noty: focus — no floating panel")
+            NSLog("Nook: focus — no floating panel")
             return
         }
-        NSLog("Noty: focus lift  visible=\(panel.isVisible) level=\(panel.level.rawValue)")
+        NSLog("Nook: focus lift  visible=\(panel.isVisible) level=\(panel.level.rawValue)")
         // Front-of-level for a background app's normal-level window is the
         // flaky corner of AppKit ordering. Lift at floating level so the raise
         // is unambiguous, then settle back to whatever the pin says once the

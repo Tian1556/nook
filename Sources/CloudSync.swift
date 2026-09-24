@@ -42,7 +42,7 @@ final class CloudSync {
         // Every deletion below is gated on this. With no folder, every file looks
         // deleted and the pass would empty the deck.
         guard folder.isAvailable, folder.ensureFolder() else {
-            NSLog("Noty cloud: iCloud Drive is unavailable — skipping this pass")
+            NSLog("Nook cloud: iCloud Drive is unavailable — skipping this pass")
             return false
         }
 
@@ -200,7 +200,7 @@ final class CloudSync {
 
         let loser = localWins ? remoteNote : localNote
         folder.writeConflict(Self.conflictDocument(for: loser), named: fileName)
-        NSLog("Noty cloud: conflict on \(fileName) — kept a copy in \(CloudFolder.conflictsFolderName)")
+        NSLog("Nook cloud: conflict on \(fileName) — kept a copy in \(CloudFolder.conflictsFolderName)")
 
         if localWins {
             push(noteID: noteID, existingFileName: fileName)

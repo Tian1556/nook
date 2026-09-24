@@ -420,7 +420,7 @@ final class DeckController: NSObject {
         // Already floating somewhere on the screen — focus it there instead of
         // opening the same body in two editors.
         if FloatingNote.shared.noteID == id {
-            NSLog("Noty: expand \(id.prefix(6)) routed to floating note")
+            NSLog("Nook: expand \(id.prefix(6)) routed to floating note")
             FloatingNote.shared.focus(); return
         }
         model.openedHeight = Settings.noteSize.height
@@ -669,17 +669,6 @@ final class DeckController: NSObject {
             displayItem.submenu = displayMenu
             menu.addItem(displayItem)
         }
-
-        let updates = NSMenuItem(title: L10n.text("menu.check_for_updates"),
-                                 action: #selector(AppDelegate.checkForUpdates), keyEquivalent: "")
-        menu.addItem(updates)
-
-        let autoUpdate = NSMenuItem(title: L10n.text("menu.check_automatically"),
-                                    action: #selector(AppDelegate.toggleAutoUpdates), keyEquivalent: "")
-        autoUpdate.state = Updater.shared.automaticallyChecks ? .on : .off
-        autoUpdate.isEnabled = Updater.available
-        menu.addItem(autoUpdate)
-        menu.addItem(.separator())
 
         let login = NSMenuItem(title: L10n.text("menu.launch_at_login"),
                                action: #selector(AppDelegate.toggleLaunchAtLogin), keyEquivalent: "")
