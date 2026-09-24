@@ -36,6 +36,15 @@ if rg -q 'Updater|canImport\(Sparkle\)|SUFeedURL|SUPublicEDKey' \
     fail "automatic update code is still active"
 fi
 
+for CLOUD_SOURCE in CloudFolder CloudSync CloudSyncIndex NoteDocument SyncGateway SyncPlan; do
+    [ ! -e "$ROOT/Sources/$CLOUD_SOURCE.swift" ] \
+        || fail "iCloud sync source $CLOUD_SOURCE.swift is still present"
+done
+if rg -q -i 'icloud|cloudkit|ubiquit|cloudSyncEnabled|settings\.sync' \
+    "$ROOT/Sources" "$ROOT/Resources"; then
+    fail "iCloud sync code or UI is still active"
+fi
+
 if [ -d "$APP" ]; then
     BUILT_PLIST="$APP/Contents/Info.plist"
     [ -x "$APP/Contents/MacOS/Nook" ] || fail "built Nook executable is missing"
@@ -46,4 +55,4 @@ if [ -d "$APP" ]; then
     fi
 fi
 
-echo "✓ Nook identity and update isolation verified"
+echo "✓ Nook identity, local-only storage, and update isolation verified"

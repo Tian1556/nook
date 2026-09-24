@@ -125,16 +125,6 @@ final class SettingsModel: ObservableObject {
     @Published var openOnHover: Bool    { didSet { Settings.openOnHover = openOnHover; apply() } }
     @Published var tabPreview: Bool     { didSet { Settings.tabPreview = tabPreview; apply() } }
 
-    @Published var cloudSync: Bool {
-        didSet {
-            guard !loading, cloudSync != oldValue else { return }
-            Settings.cloudSyncEnabled = cloudSync
-            CloudSync.shared.reload()
-            refreshSyncStatus()
-        }
-    }
-    @Published var syncStatus: String = ""
-
     @Published var scNewNote: Shortcut  { didSet { Settings.scNewNote = scNewNote; HotKeys.shared.reload() } }
     @Published var scAllNotes: Shortcut { didSet { Settings.scAllNotes = scAllNotes; HotKeys.shared.reload() } }
     @Published var scArchive: Shortcut  { didSet { Settings.scArchive = scArchive; HotKeys.shared.reload() } }
@@ -175,7 +165,6 @@ final class SettingsModel: ObservableObject {
         noteSizeIndex = Settings.noteSizeIndex
         openOnHover = Settings.openOnHover
         tabPreview = Settings.tabPreview
-        cloudSync = Settings.cloudSyncEnabled
         scNewNote = Settings.scNewNote
         scAllNotes = Settings.scAllNotes
         scArchive = Settings.scArchive
@@ -190,8 +179,6 @@ final class SettingsModel: ObservableObject {
         scBigger = Settings.scBigger
         scSmaller = Settings.scSmaller
         loading = false
-        refreshSyncStatus()
-
         NotificationCenter.default.addObserver(
             forName: NSApplication.didChangeScreenParametersNotification,
             object: nil, queue: .main) { [weak self] _ in
@@ -213,32 +200,6 @@ final class SettingsModel: ObservableObject {
     private func apply() {
         guard !loading else { return }
         (NSApp.delegate as? AppDelegate)?.refreshDecks()
-    }
-
-    func refreshSyncStatus() {
-        guard Settings.cloudSyncEnabled else {
-            syncStatus = L10n.text("settings.sync.status_off")
-            return
-        }
-        guard CloudFolder.isAvailable else {
-            syncStatus = L10n.text("settings.sync.status_unavailable")
-            return
-        }
-        guard let last = CloudSync.shared.lastSync else {
-            syncStatus = L10n.text("settings.sync.status_never")
-            return
-        }
-        syncStatus = L10n.format("settings.sync.status_last", Fmt.ago(last))
-    }
-
-    func syncNow() {
-        CloudSync.shared.syncNow()
-        refreshSyncStatus()
-    }
-
-    func revealSyncFolder() {
-        CloudFolder.ensureFolder()
-        NSWorkspace.shared.activateFileViewerSelecting([CloudFolder.url])
     }
 
     /// Warn about a combination already used by another Nook shortcut.
@@ -306,8 +267,6 @@ struct SettingsView: View {
                 .tabItem { Label(L10n.text("settings.deck.tab"), systemImage: "menucard") }
             pane { notesTab }
                 .tabItem { Label(L10n.text("settings.notes.tab"), systemImage: "textformat") }
-            pane { syncTab }
-                .tabItem { Label(L10n.text("settings.sync.tab"), systemImage: "icloud") }
         }
         .frame(width: 600, height: 500)
     }
@@ -497,40 +456,6 @@ struct SettingsView: View {
         }
     }
 
-    @ViewBuilder
-    private var syncTab: some View {
-        Section {
-            toggleRow(L10n.text("settings.sync.enable"),
-                      help: L10n.text("settings.sync.enable_help"),
-                      isOn: $model.cloudSync,
-                      disabled: !CloudFolder.isAvailable)
-            if !CloudFolder.isAvailable {
-                Text(L10n.text("settings.sync.unavailable_help"))
-                    .font(.system(size: 11)).foregroundStyle(.secondary)
-            }
-            LabeledContent(L10n.text("settings.sync.status")) {
-                HStack(spacing: 10) {
-                    Text(model.syncStatus)
-                        .font(.system(size: 12)).foregroundStyle(.secondary)
-                    Button(L10n.text("settings.sync.sync_now")) { model.syncNow() }
-                        .disabled(!model.cloudSync || !CloudFolder.isAvailable)
-                }
-            }
-            LabeledContent(L10n.text("settings.sync.folder")) {
-                HStack(spacing: 10) {
-                    Text(CloudFolder.url.path)
-                        .font(.system(size: 11).monospaced())
-                        .foregroundStyle(.secondary)
-                        .lineLimit(1).truncationMode(.head)
-                    Button(L10n.text("settings.sync.reveal")) { model.revealSyncFolder() }
-                        .disabled(!CloudFolder.isAvailable)
-                }
-            }
-        } header: {
-            Text(L10n.text("settings.sync.caption"))
-        }
-    }
-
     // MARK: pieces
 
     /// One tab, laid out by the system: grouped form cells align every label
@@ -540,9 +465,6 @@ struct SettingsView: View {
             content()
         }
         .formStyle(.grouped)
-        .onAppear {
-            model.refreshSyncStatus()
-        }
     }
 
     /// The standard settings cell: title and its explanation on the left, the

@@ -10,7 +10,6 @@ Nook 是一个只属于自己的 macOS 屏幕边缘便笺工具。它基于
 - 独立 Bundle ID：`local.nook.Nook`
 - 独立数据目录：`~/Library/Application Support/Nook/`
 - 独立自动化协议：`nook://`
-- 独立 iCloud Drive 目录：`Nook/`
 - 不连接 Noty 的自动更新服务
 
 Nook 与 Noty 可以同时安装和运行，不会共用笔记、偏好设置或自动化入口。
@@ -22,10 +21,9 @@ Nook 与 Noty 可以同时安装和运行，不会共用笔记、偏好设置或
 - Markdown 即时样式
 - 本地 SQLite 存储，正文使用 AES-GCM 加密
 - Markdown、纯文本和 `.stickies` 导入导出
-- 可选的 iCloud Drive 文件夹同步
 
-为保持存档兼容性，内部 Markdown 图片协议 `noty-img://` 与同步字段
-`noty-id` 沿用上游格式。它们不是应用品牌或系统注册协议。
+为保持存档兼容性，内部 Markdown 图片协议 `noty-img://` 沿用上游格式。
+它不是应用品牌或系统注册协议。
 
 ## 构建
 
@@ -57,6 +55,7 @@ URL 中的文本只会成为笔记内容，不会被执行。
 ## 数据说明
 
 Nook 首次启动时创建新的数据库和加密密钥，不会自动读取或迁移 Noty 数据。
+所有笔记只保存在本机；Nook 不连接 iCloud，也不把笔记发送到云端。
 若以后需要迁移，请优先通过 Noty 的导出功能和 Nook 的导入功能完成，不要直接
 复制 `notes.db` 或 `note.key`。
 

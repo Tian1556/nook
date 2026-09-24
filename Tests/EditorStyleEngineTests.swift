@@ -26,8 +26,6 @@ struct EditorStyleEngineTests {
         testTextDirectionDatabaseMigration()
         LocalizationTests.run { check($0, $1) }
         TaskMarkerTests.run { check($0, $1) }
-        CloudSyncTests.run { check($0, $1) }
-        SyncRunnerTests.run { check($0, $1) }
         ImageInteractionTests.run { check($0, $1) }
         testCustomNoteTitleBehavior()
         PersistenceTests.run { check($0, $1) }

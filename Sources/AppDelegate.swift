@@ -19,8 +19,6 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             capture:  { QuickCapture.shared.toggle() }
         )
 
-        // Off unless the user asked for it; reload() is a no-op when it is off.
-        CloudSync.shared.reload()
     }
 
     func applicationShouldTerminate(_ sender: NSApplication) -> NSApplication.TerminateReply {
@@ -29,12 +27,6 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
     func applicationWillTerminate(_ notification: Notification) {
         HotKeys.shared.unregisterAll()
-    }
-
-    /// Coming back to the Mac is the likeliest moment for the phone's edits to
-    /// be waiting, and the poll may be up to its full interval away.
-    func applicationDidBecomeActive(_ notification: Notification) {
-        CloudSync.shared.syncNow()
     }
 
     func applicationShouldTerminateAfterLastWindowClosed(_ sender: NSApplication) -> Bool { false }
