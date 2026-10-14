@@ -506,6 +506,20 @@ final class DeckController: NSObject {
 
     // MARK: Key handling for the expanded note
 
+    func cycleDeck() {
+        guard let currentID = model.state.expandedID,
+              let nextID = DeckNavigation.nextID(
+                after: currentID,
+                in: NoteStore.shared.active.map(\.id)) else { return }
+        model.findQuery = nil
+        model.openedHeight = Settings.noteSize.height
+        model.openedTop = nil
+        var transaction = Transaction()
+        transaction.disablesAnimations = true
+        withTransaction(transaction) { model.state = .expanded(nextID) }
+        noteActivity()
+    }
+
     private func installKeyMonitor() {
         guard keyMonitor == nil else { return }
         keyMonitor = NSEvent.addLocalMonitorForEvents(matching: .keyDown) { [weak self] event in
@@ -522,6 +536,9 @@ final class DeckController: NSObject {
             }
             if Settings.scArchiveNote.matches(event) {
                 NoteStore.shared.setArchived(id: id, true); self.collapse(); return nil
+            }
+            if Settings.scCycleDeck.matches(event) {
+                self.cycleDeck(); return nil
             }
             if Settings.scDelete.matches(event) {
                 NoteStore.shared.delete(id: id); self.collapse(); return nil

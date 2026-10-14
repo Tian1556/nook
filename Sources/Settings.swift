@@ -162,6 +162,10 @@ enum Settings {
         get { shortcut("scArchiveNote", default: Shortcut(keyCode: 0,  modifiers: shift | cmd)) }
         set { setShortcut("scArchiveNote", newValue) }
     }
+    static var scCycleDeck: Shortcut {
+        get { shortcut("scCycleDeck", default: Shortcut(keyCode: 48, modifiers: ctrl)) }  // ⌃Tab
+        set { setShortcut("scCycleDeck", newValue) }
+    }
     static var scClose: Shortcut {
         get { shortcut("scClose",       default: Shortcut(keyCode: 53, modifiers: 0)) }
         set { setShortcut("scClose", newValue) }

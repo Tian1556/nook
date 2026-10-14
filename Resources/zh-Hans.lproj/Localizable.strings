@@ -178,6 +178,7 @@
 "shortcut.all_notes" = "所有便笺";
 "shortcut.archive_note" = "归档便笺";
 "shortcut.archive_window" = "归档窗口";
+"shortcut.cycle_deck" = "切换便签栏";
 "shortcut.duplicate" = "已被其他快捷键使用";
 "shortcut.new_note" = "新建便笺";
 "shortcut.press_keys" = "请按快捷键…";

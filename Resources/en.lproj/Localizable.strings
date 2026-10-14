@@ -178,6 +178,7 @@
 "shortcut.all_notes" = "All Notes";
 "shortcut.archive_note" = "Archive note";
 "shortcut.archive_window" = "Archive window";
+"shortcut.cycle_deck" = "Cycle deck";
 "shortcut.duplicate" = "Already used by another shortcut";
 "shortcut.new_note" = "New note";
 "shortcut.press_keys" = "Press keys…";

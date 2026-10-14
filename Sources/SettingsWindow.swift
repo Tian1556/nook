@@ -131,6 +131,7 @@ final class SettingsModel: ObservableObject {
     @Published var scCapture: Shortcut  { didSet { Settings.scCapture = scCapture; HotKeys.shared.reload() } }
     // Handled by the open note itself, so these need no hotkey registration.
     @Published var scArchiveNote: Shortcut { didSet { Settings.scArchiveNote = scArchiveNote } }
+    @Published var scCycleDeck: Shortcut { didSet { Settings.scCycleDeck = scCycleDeck } }
     @Published var scClose: Shortcut   { didSet { Settings.scClose = scClose } }
     @Published var scFind: Shortcut    { didSet { Settings.scFind = scFind } }
     @Published var scTask: Shortcut    { didSet { Settings.scTask = scTask } }
@@ -170,6 +171,7 @@ final class SettingsModel: ObservableObject {
         scArchive = Settings.scArchive
         scCapture = Settings.scCapture
         scArchiveNote = Settings.scArchiveNote
+        scCycleDeck = Settings.scCycleDeck
         scClose = Settings.scClose
         scFind = Settings.scFind
         scTask = Settings.scTask
@@ -207,7 +209,8 @@ final class SettingsModel: ObservableObject {
         guard s.isSet else { return false }
         let others = [("new", scNewNote), ("all", scAllNotes), ("archive", scArchive),
                       ("capture", scCapture),
-                      ("archiveNote", scArchiveNote), ("close", scClose), ("find", scFind),
+                      ("archiveNote", scArchiveNote), ("cycleDeck", scCycleDeck),
+                      ("close", scClose), ("find", scFind),
                       ("task", scTask), ("pin", scPin), ("colour", scColour),
                       ("delete", scDelete), ("bigger", scBigger), ("smaller", scSmaller)]
             .filter { $0.0 != label }
@@ -287,6 +290,7 @@ struct SettingsView: View {
         }
         Section {
             shortcutRow(L10n.text("action.close"), model.scClose, "close", bare: true) { model.scClose = $0 }
+            shortcutRow(L10n.text("shortcut.cycle_deck"), model.scCycleDeck, "cycleDeck", bare: true) { model.scCycleDeck = $0 }
             shortcutRow(L10n.text("shortcut.archive_note"), model.scArchiveNote, "archiveNote", bare: true) { model.scArchiveNote = $0 }
             shortcutRow(L10n.text("action.delete"), model.scDelete, "delete", bare: true) { model.scDelete = $0 }
             shortcutRow(L10n.text("action.find"), model.scFind, "find", bare: true) { model.scFind = $0 }
