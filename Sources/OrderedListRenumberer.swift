@@ -17,7 +17,7 @@ enum OrderedListRenumberer {
     }
 
     static let lineExpression = try! NSRegularExpression(
-        pattern: "^([ \\t]*)((?:\\d+\\.)*\\d+)([.)])([ \\t]+)(.*)$")
+        pattern: "^([ \\t]*)((?:\\d+\\.)*\\d+)([.)])([ \\t]*)(.*)$")
 
     static func replacements(in text: String, affectedRange: NSRange) -> [Replacement] {
         let ns = text as NSString

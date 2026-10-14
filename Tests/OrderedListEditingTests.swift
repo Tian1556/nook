@@ -3,6 +3,8 @@ import AppKit
 enum OrderedListEditingTests {
     static func run(_ check: (_ condition: Bool, _ message: String) -> Void) {
         deletionRenumbersFollowingItems(check)
+        deletionRenumbersCompactChineseItems(check)
+        deletionRenumbersLongCompactList(check)
         middleInsertionRenumbersFollowingItems(check)
         newlinePreservesMarkerFormatting(check)
         indentationRenumbersSiblings(check)
@@ -21,6 +23,31 @@ enum OrderedListEditingTests {
         view.deleteBackward(nil)
         check(view.string == "1. A\n2. C\n3. D",
               "deleting item 2 must renumber 3 and 4 to 2 and 3")
+    }
+
+    private static func deletionRenumbersCompactChineseItems(
+        _ check: (_ condition: Bool, _ message: String) -> Void
+    ) {
+        let view = makeView("1.资金问题\n2.利息问题\n3.退款问题")
+        let line = (view.string as NSString).range(of: "2.利息问题\n")
+        view.setSelectedRange(line)
+        view.deleteBackward(nil)
+        check(view.string == "1.资金问题\n2.退款问题",
+              "numbered Chinese lines without a space after the dot must renumber")
+    }
+
+    private static func deletionRenumbersLongCompactList(
+        _ check: (_ condition: Bool, _ message: String) -> Void
+    ) {
+        let source = (1...10).map { "\($0).问题\($0)" }.joined(separator: "\n")
+        let view = makeView(source)
+        let line = (view.string as NSString).range(of: "6.问题6\n")
+        view.setSelectedRange(line)
+        view.deleteBackward(nil)
+        let expected = (1...9).map { "\($0).问题\($0 < 6 ? $0 : $0 + 1)" }
+            .joined(separator: "\n")
+        check(view.string == expected,
+              "deleting from a compact 1-to-10 list must close the numbering gap")
     }
 
     private static func middleInsertionRenumbersFollowingItems(
