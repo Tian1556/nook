@@ -160,6 +160,10 @@ final class FloatingNote: NSObject, NSWindowDelegate {
             guard let self, let panel = self.panel, panel.isKeyWindow else { return event }
             self.lastActivity = Date()
             if event.keyCode == 53 { self.tuck(); return nil }
+            if let id = self.noteID, Settings.scSaveMarkdown.matches(event) {
+                Transfer.saveCurrentNoteMarkdown(noteID: id)
+                return nil
+            }
             return event
         }
         idleTimer = Timer.scheduledTimer(withTimeInterval: 2, repeats: true) { [weak self] _ in
@@ -221,6 +225,7 @@ private struct FloatingNoteView: View {
                              fontSize: Settings.noteFontSize,
                              markdownEnabled: Settings.markdownStyling,
                              textDirection: note.textDirection,
+                             onSaveMarkdown: { Transfer.saveCurrentNoteMarkdown(noteID: note.id) },
                              styleToken: "\(note.color)|\(Settings.noteFontSize)|\(Settings.noteFontName)|\(Settings.markdownStyling)")
             }
             .background(
@@ -246,6 +251,15 @@ private struct FloatingNoteView: View {
                 .foregroundStyle(pal.ink.opacity(0.92))
                 .lineLimit(1)
             Spacer(minLength: 6)
+            Button { Transfer.saveCurrentNoteMarkdown(noteID: note.id) } label: {
+                Image(systemName: "square.and.arrow.up")
+                    .font(Ink.bodyFont(10.5).weight(.semibold))
+                    .frame(width: 18, height: 18)
+                    .contentShape(Rectangle())
+            }
+            .buttonStyle(.plain)
+            .foregroundStyle(pal.ink.opacity(0.45))
+            .help(L10n.format("help.save_markdown", Settings.scSaveMarkdown.display))
             Button {
                 NoteStore.shared.togglePin(id: note.id)
                 FloatingNote.shared.applyLevel()

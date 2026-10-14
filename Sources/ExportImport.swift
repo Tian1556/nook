@@ -44,6 +44,34 @@ struct StickyNote: Codable {
     }
 }
 
+struct CurrentNoteMarkdownAsset {
+    let fileName: String
+    let data: Data
+}
+
+struct CurrentNoteMarkdownPackage {
+    let markdown: String
+    let assetsDirectoryName: String?
+    let assets: [CurrentNoteMarkdownAsset]
+}
+
+enum CurrentNoteMarkdownError: LocalizedError {
+    case missingImage(String)
+    case assetsPathIsFile(String)
+    case imageVerificationFailed(String)
+
+    var errorDescription: String? {
+        switch self {
+        case .missingImage(let id):
+            return L10n.format("export.image_missing", id)
+        case .assetsPathIsFile(let name):
+            return L10n.format("export.assets_conflict", name)
+        case .imageVerificationFailed(let name):
+            return L10n.format("export.image_verify_failed", name)
+        }
+    }
+}
+
 // MARK: - Export / import
 
 enum Transfer {
@@ -169,6 +197,148 @@ enum Transfer {
         return source
     }
 
+    // MARK: Current note Markdown
+
+    static func saveCurrentNoteMarkdown(noteID: String) {
+        guard NoteStore.shared.flush(id: noteID) else {
+            alert(L10n.text("export.failed_title"),
+                  L10n.text("export.note_save_failed"))
+            return
+        }
+        guard let note = NoteStore.shared.note(id: noteID) else { return }
+
+        NSApp.activate()
+        let panel = NSSavePanel()
+        panel.nameFieldStringValue = defaultMarkdownFilename(for: note)
+        panel.allowedContentTypes = [UTType(filenameExtension: "md") ?? .plainText]
+        panel.allowsOtherFileTypes = false
+        panel.canCreateDirectories = true
+        panel.prompt = L10n.text("action.save")
+        guard panel.runModal() == .OK, let destination = panel.url else { return }
+
+        do {
+            let package = try prepareCurrentNoteMarkdown(
+                note, destination: destination, imageLoader: ImageStore.exportPayload)
+            try writeCurrentNoteMarkdown(package, destination: destination)
+            reveal(destination)
+        } catch {
+            alert(L10n.text("export.failed_title"), error.localizedDescription)
+        }
+    }
+
+    static func defaultMarkdownFilename(for note: Note) -> String {
+        safeName(note) + ".md"
+    }
+
+    /// Builds a complete, portable export without touching the destination.
+    /// Keeping planning separate from writing makes a missing image fail before
+    /// an existing Markdown file can be replaced.
+    static func prepareCurrentNoteMarkdown(
+        _ note: Note,
+        destination: URL,
+        imageLoader: (String) -> ImageStore.ExportPayload?
+    ) throws -> CurrentNoteMarkdownPackage {
+        var markdown = currentNoteMarkdownBody(note)
+        let tokens = ImageStore.tokens(in: markdown)
+        guard !tokens.isEmpty else {
+            return CurrentNoteMarkdownPackage(markdown: markdown,
+                                              assetsDirectoryName: nil,
+                                              assets: [])
+        }
+
+        let base = destination.deletingPathExtension().lastPathComponent
+        let assetsDirectoryName = base + "_assets"
+        var assets: [CurrentNoteMarkdownAsset] = []
+        var fileNames: [String: String] = [:]
+
+        for token in tokens where fileNames[token.id] == nil {
+            guard let payload = imageLoader(token.id) else {
+                throw CurrentNoteMarkdownError.missingImage(token.id)
+            }
+            let ext = payload.fileExtension.lowercased()
+            let fileName = token.id + "." + ext
+            fileNames[token.id] = fileName
+            assets.append(CurrentNoteMarkdownAsset(fileName: fileName, data: payload.data))
+        }
+
+        var rewritten = markdown as NSString
+        for token in tokens.reversed() {
+            guard let fileName = fileNames[token.id] else { continue }
+            let alt: String
+            if let width = token.width, width > 0 {
+                alt = width.rounded() == width
+                    ? "image|\(Int(width))"
+                    : "image|\(String(format: "%.1f", Double(width)))"
+            } else {
+                alt = "image"
+            }
+            let relative = markdownLinkPath(assetsDirectoryName + "/" + fileName)
+            rewritten = rewritten.replacingCharacters(
+                in: token.range, with: "![\(alt)](\(relative))") as NSString
+        }
+        markdown = rewritten as String
+
+        return CurrentNoteMarkdownPackage(markdown: markdown,
+                                          assetsDirectoryName: assetsDirectoryName,
+                                          assets: assets)
+    }
+
+    /// Writes and verifies every image before atomically replacing Markdown.
+    /// Existing unrelated files in the assets folder are intentionally kept.
+    static func writeCurrentNoteMarkdown(
+        _ package: CurrentNoteMarkdownPackage, destination: URL
+    ) throws {
+        if let directoryName = package.assetsDirectoryName, !package.assets.isEmpty {
+            let directory = destination.deletingLastPathComponent()
+                .appendingPathComponent(directoryName, isDirectory: true)
+            var isDirectory: ObjCBool = false
+            if FileManager.default.fileExists(atPath: directory.path, isDirectory: &isDirectory) {
+                guard isDirectory.boolValue else {
+                    throw CurrentNoteMarkdownError.assetsPathIsFile(directoryName)
+                }
+            } else {
+                try FileManager.default.createDirectory(
+                    at: directory, withIntermediateDirectories: true)
+            }
+
+            for asset in package.assets {
+                let url = directory.appendingPathComponent(asset.fileName)
+                try asset.data.write(to: url, options: .atomic)
+                guard (try? Data(contentsOf: url)) == asset.data else {
+                    throw CurrentNoteMarkdownError.imageVerificationFailed(asset.fileName)
+                }
+            }
+        }
+        try package.markdown.write(to: destination, atomically: true, encoding: .utf8)
+    }
+
+    private static func currentNoteMarkdownBody(_ note: Note) -> String {
+        let customTitle = note.title.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !customTitle.isEmpty else { return markdownBody(note) }
+
+        let source = Tasks.toMarkdown(note.body)
+        let lines = source.split(separator: "\n", omittingEmptySubsequences: false).map(String.init)
+        guard let firstLine = lines.first else { return "# " + customTitle }
+        let first = firstLine.trimmingCharacters(in: .whitespaces)
+        if first == "# " + customTitle { return source }
+        if first == customTitle {
+            return (["# " + customTitle] + lines.dropFirst()).joined(separator: "\n")
+        }
+        return source.isEmpty ? "# " + customTitle : "# \(customTitle)\n\n\(source)"
+    }
+
+    /// Keep readable Unicode names while escaping characters that CommonMark
+    /// treats as link syntax or URL delimiters. The folder on disk keeps the
+    /// exact filename chosen in the save panel.
+    private static func markdownLinkPath(_ path: String) -> String {
+        let unsafe = CharacterSet(charactersIn: "%()#?\\<>")
+            .union(.whitespacesAndNewlines)
+            .union(.controlCharacters)
+        return path.unicodeScalars.map { scalar in
+            unsafe.contains(scalar) ? String(format: "%%%02X", scalar.value) : String(scalar)
+        }.joined()
+    }
+
     // MARK: Import
 
     static func decodeArchive(_ data: Data) throws -> [Note] {
@@ -274,7 +444,10 @@ enum Transfer {
         for (oldID, b64) in images {
             guard ImageStore.data(id: oldID) == nil else { continue }
             guard let data = Data(base64Encoded: b64),
-                  let newID = ImageStore.save(data: data, ext: imageExt(for: data)) else { continue }
+                  let newID = ImageStore.save(
+                    data: data,
+                    ext: ImageStore.detectedFileExtension(for: data) ?? "png"
+                  ) else { continue }
             if newID != oldID { remapped[oldID] = newID }
         }
         return remapped
@@ -294,18 +467,7 @@ enum Transfer {
         return result as String
     }
 
-    /// Archives carry only the bytes, but `save(data:ext:)` wants an extension,
-    /// so sniff the common formats. NSImage sniffs content too, so a wrong
-    /// guess would only affect the file name, never rendering.
-    private static func imageExt(for data: Data) -> String {
-        let head = [UInt8](data.prefix(4))
-        if head.starts(with: [0x89, 0x50, 0x4E, 0x47]) { return "png" }
-        if head.starts(with: [0xFF, 0xD8, 0xFF]) { return "jpg" }
-        if head.starts(with: [0x47, 0x49, 0x46, 0x38]) { return "gif" }
-        return "png"
-    }
-
-    private static func safeName(_ n: Note) -> String {
+    static func safeName(_ n: Note) -> String {
         let raw = n.displayTitle
         let cleaned = raw.components(separatedBy: CharacterSet(charactersIn: "/\\:*?\"<>|\n\r\t"))
             .joined(separator: "-")

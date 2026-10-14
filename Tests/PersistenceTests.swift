@@ -13,6 +13,7 @@ enum PersistenceTests {
             try testSharedEditing(directory, check)
             try testCryptoFailures(directory, check)
             try testExport(directory, check)
+            try testCurrentNoteMarkdownExport(directory, check)
             try testArchives(directory, check)
             testTasks(check)
         } catch { check(false, "Persistence regression failed: \(error)") }
@@ -132,6 +133,82 @@ enum PersistenceTests {
         try FileManager.default.createSymbolicLink(at: link, withDestinationURL: original)
         _ = try Transfer.writeUniqueFile("link note", named: "Link", ext: "md", directory: dir, used: &used)
         check(try String(contentsOf: original, encoding: .utf8) == "existing file", "export must not follow existing symlinks")
+    }
+
+    private static func testCurrentNoteMarkdownExport(
+        _ dir: URL, _ check: (Bool, String) -> Void
+    ) throws {
+        var titled = Note(title: "项目/计划", body: "正文第一行\n☐ 待办\n☑ 完成")
+        let titledURL = dir.appendingPathComponent("项目计划.md")
+        let titledPackage = try Transfer.prepareCurrentNoteMarkdown(
+            titled, destination: titledURL, imageLoader: { _ in nil })
+        check(titledPackage.markdown == "# 项目/计划\n\n正文第一行\n- [ ] 待办\n- [x] 完成",
+              "current-note export must include one custom title and Markdown tasks")
+        check(Transfer.defaultMarkdownFilename(for: titled) == "项目-计划.md",
+              "the save panel filename must sanitize the current note title")
+
+        titled.body = "项目/计划\n正文"
+        let matchingTitle = try Transfer.prepareCurrentNoteMarkdown(
+            titled, destination: titledURL, imageLoader: { _ in nil })
+        check(matchingTitle.markdown == "# 项目/计划\n正文",
+              "a body that already starts with the custom title must not duplicate it")
+
+        let firstID = "first-image"
+        let secondID = "second-image"
+        let imageBody = [
+            "图片记录",
+            ImageStore.token(id: firstID, width: nil),
+            ImageStore.token(id: firstID, width: 320),
+            ImageStore.token(id: secondID, width: nil),
+        ].joined(separator: "\n")
+        let imageNote = Note(body: imageBody)
+        let png = Data([0x89, 0x50, 0x4E, 0x47, 0x01])
+        let jpg = Data([0xFF, 0xD8, 0xFF, 0x01])
+        let imagePackage = try Transfer.prepareCurrentNoteMarkdown(
+            imageNote, destination: dir.appendingPathComponent("图片记录.md"),
+            imageLoader: { id in
+                switch id {
+                case firstID: ImageStore.ExportPayload(data: png, fileExtension: "png")
+                case secondID: ImageStore.ExportPayload(data: jpg, fileExtension: "jpg")
+                default: nil
+                }
+            })
+        check(imagePackage.assetsDirectoryName == "图片记录_assets",
+              "image export must derive a sibling assets folder from the Markdown name")
+        check(imagePackage.assets.map(\.fileName) == ["first-image.png", "second-image.jpg"],
+              "duplicate image references must produce one stable asset each")
+        check(imagePackage.markdown.contains("![image](图片记录_assets/first-image.png)")
+              && imagePackage.markdown.contains("![image|320](图片记录_assets/first-image.png)")
+              && imagePackage.markdown.contains("![image](图片记录_assets/second-image.jpg)"),
+              "internal image tokens must become portable relative Markdown links")
+
+        let spacedPackage = try Transfer.prepareCurrentNoteMarkdown(
+            imageNote, destination: dir.appendingPathComponent("Weekly Notes (1)#draft.md"),
+            imageLoader: { _ in ImageStore.ExportPayload(data: png, fileExtension: "png") })
+        check(spacedPackage.markdown.contains(
+            "Weekly%20Notes%20%281%29%23draft_assets/first-image.png"),
+            "Markdown image paths must escape characters that break link destinations")
+
+        do {
+            _ = try Transfer.prepareCurrentNoteMarkdown(
+                imageNote, destination: dir.appendingPathComponent("missing.md"),
+                imageLoader: { _ in nil })
+            check(false, "an image-backed export must fail when an image is missing")
+        } catch { /* Expected failure. */ }
+
+        let protected = dir.appendingPathComponent("protected.md")
+        try "keep me".write(to: protected, atomically: true, encoding: .utf8)
+        let conflict = dir.appendingPathComponent("protected_assets")
+        try "not a directory".write(to: conflict, atomically: true, encoding: .utf8)
+        let protectedPackage = try Transfer.prepareCurrentNoteMarkdown(
+            imageNote, destination: protected, imageLoader: { _ in
+                ImageStore.ExportPayload(data: png, fileExtension: "png")
+            })
+        mustThrow("an assets-path conflict must stop the export", check) {
+            try Transfer.writeCurrentNoteMarkdown(protectedPackage, destination: protected)
+        }
+        check(try String(contentsOf: protected, encoding: .utf8) == "keep me",
+              "asset preparation failure must preserve an existing Markdown file")
     }
 
     private static func testArchives(_ dir: URL, _ check: (Bool, String) -> Void) throws {

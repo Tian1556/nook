@@ -27,6 +27,7 @@ final class LibraryWindow: NSObject, NSWindowDelegate {
     static let shared = LibraryWindow()
     private var window: NSWindow?
     private let model = LibraryModel()
+    private var keyMonitor: Any?
 
     var isOpen: Bool { window?.isVisible ?? false }
 
@@ -50,6 +51,7 @@ final class LibraryWindow: NSObject, NSWindowDelegate {
         NSApp.setActivationPolicy(.regular)
         NSApp.activate()
         window?.makeKeyAndOrderFront(nil)
+        installKeyMonitor()
     }
 
     private func currentList() -> [Note] {
@@ -57,9 +59,22 @@ final class LibraryWindow: NSObject, NSWindowDelegate {
     }
 
     func windowWillClose(_ notification: Notification) {
+        if let keyMonitor { NSEvent.removeMonitor(keyMonitor) }
+        keyMonitor = nil
         // Back to a menu-bar-less agent so the dock icon disappears again —
         // unless Settings is still up.
         DispatchQueue.main.async { NSApp.setActivationPolicy(.accessory) }
+    }
+
+    private func installKeyMonitor() {
+        guard keyMonitor == nil else { return }
+        keyMonitor = NSEvent.addLocalMonitorForEvents(matching: .keyDown) { [weak self] event in
+            guard let self, self.window?.isKeyWindow == true,
+                  let id = self.model.selection,
+                  Settings.scSaveMarkdown.matches(event) else { return event }
+            Transfer.saveCurrentNoteMarkdown(noteID: id)
+            return nil
+        }
     }
 }
 
@@ -317,6 +332,13 @@ struct LibraryDetail: View {
                     NoteStore.shared.setTextDirection(id: note.id, direction: $0)
                 }
 
+                Button { Transfer.saveCurrentNoteMarkdown(noteID: note.id) } label: {
+                    Image(systemName: "square.and.arrow.up").font(.system(size: 11))
+                }
+                .buttonStyle(.plain)
+                .foregroundStyle(.secondary)
+                .help(L10n.format("help.save_markdown", Settings.scSaveMarkdown.display))
+
                 if note.archived {
                     Button(L10n.text("action.restore")) { NoteStore.shared.setArchived(id: note.id, false) }
                         .controlSize(.small)
@@ -340,6 +362,7 @@ struct LibraryDetail: View {
                          autofocus: false, fontSize: Settings.noteFontSize,
                          markdownEnabled: Settings.markdownStyling,
                          textDirection: note.textDirection,
+                         onSaveMarkdown: { Transfer.saveCurrentNoteMarkdown(noteID: note.id) },
                          styleToken: "\(note.color)|\(Settings.noteFontSize)|\(Settings.noteFontName)|\(Settings.markdownStyling)")
                 .background(pal.paper)
         }

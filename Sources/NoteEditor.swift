@@ -133,6 +133,8 @@ final class HidingLayoutManager: NSLayoutManager {
 /// toggles it, Return carries the list on, and finished lines get struck through.
 final class TaskTextView: NSTextView {
 
+    var onSaveMarkdown: (() -> Void)?
+
     /// Owns the image overlays and the line-height delegate for image tokens.
     /// Installed by NoteTextView.makeNSView; kept on the view so the editor
     /// coordinator can refresh it after every style pass.
@@ -749,7 +751,18 @@ final class TaskTextView: NSTextView {
                               keyEquivalent: "")
         item.target = self
         menu.addItem(item)
+        if onSaveMarkdown != nil {
+            let save = NSMenuItem(title: L10n.text("action.save_markdown"),
+                                  action: #selector(saveMarkdown(_:)),
+                                  keyEquivalent: "")
+            save.target = self
+            menu.addItem(save)
+        }
         return menu
+    }
+
+    @objc private func saveMarkdown(_ sender: Any?) {
+        onSaveMarkdown?()
     }
 
     @objc func insertImageFromPanel(_ sender: Any?) {
@@ -795,6 +808,7 @@ struct NoteTextView: NSViewRepresentable {
     var fontSize: CGFloat = 13.5
     var markdownEnabled: Bool = Settings.markdownStyling
     var textDirection: NoteTextDirection = .automatic
+    var onSaveMarkdown: (() -> Void)?
     /// Everything that affects how the text is drawn, as one cheap value. The
     /// alternative — comparing a freshly built NSColor and NSFont — is not
     /// reliably equal, so a full restyle ran on every re-render.
@@ -821,6 +835,7 @@ struct NoteTextView: NSViewRepresentable {
         storage.addLayoutManager(layout)
 
         let tv = TaskTextView(frame: .zero, textContainer: container)
+        tv.onSaveMarkdown = onSaveMarkdown
         tv.autoresizingMask = [.width]
         tv.isVerticallyResizable = true
         tv.isHorizontallyResizable = false
@@ -871,6 +886,7 @@ struct NoteTextView: NSViewRepresentable {
 
     func updateNSView(_ scroll: NSScrollView, context: Context) {
         guard let tv = scroll.documentView as? NSTextView else { return }
+        (tv as? TaskTextView)?.onSaveMarkdown = onSaveMarkdown
         context.coordinator.parent = self
         context.coordinator.synchronize(tv)
         Self.applyTextDirection(textDirection, to: tv)
@@ -1219,6 +1235,7 @@ struct NoteEditorView: View {
                          fontSize: deck.fontSize,
                          markdownEnabled: deck.markdown,
                          textDirection: note.textDirection,
+                         onSaveMarkdown: { Transfer.saveCurrentNoteMarkdown(noteID: note.id) },
                          styleToken: "\(note.color)|\(deck.fontSize)|\(Settings.noteFontName)|\(deck.markdown)")
             footer
         }
@@ -1312,6 +1329,15 @@ struct NoteEditorView: View {
                  : L10n.format("note.saved", Fmt.ago(note.modified)))
                 .font(Ink.bodyFont(10))
                 .foregroundStyle(pal.ink.opacity(0.42))
+            Button { Transfer.saveCurrentNoteMarkdown(noteID: note.id) } label: {
+                Image(systemName: "square.and.arrow.up")
+                    .font(Ink.bodyFont(10.5).weight(.semibold))
+                    .frame(width: 18, height: 18)
+                    .contentShape(Rectangle())
+            }
+            .buttonStyle(.plain)
+            .foregroundStyle(pal.ink.opacity(0.5))
+            .help(L10n.format("help.save_markdown", Settings.scSaveMarkdown.display))
             Button { NoteStore.shared.togglePin(id: note.id) } label: {
                 Image(systemName: note.pinned ? "pin.fill" : "pin")
                     .font(Ink.bodyFont(11).weight(.semibold))

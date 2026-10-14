@@ -174,6 +174,10 @@ enum Settings {
         get { shortcut("scFind",        default: Shortcut(keyCode: 3,  modifiers: cmd)) }
         set { setShortcut("scFind", newValue) }
     }
+    static var scSaveMarkdown: Shortcut {
+        get { shortcut("scSaveMarkdown", default: Shortcut(keyCode: 1, modifiers: shift | cmd)) }
+        set { setShortcut("scSaveMarkdown", newValue) }
+    }
     static var scTask: Shortcut {
         get { shortcut("scTask",        default: Shortcut(keyCode: 17, modifiers: cmd)) }
         set { setShortcut("scTask", newValue) }

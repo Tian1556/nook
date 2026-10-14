@@ -134,6 +134,7 @@ final class SettingsModel: ObservableObject {
     @Published var scCycleDeck: Shortcut { didSet { Settings.scCycleDeck = scCycleDeck } }
     @Published var scClose: Shortcut   { didSet { Settings.scClose = scClose } }
     @Published var scFind: Shortcut    { didSet { Settings.scFind = scFind } }
+    @Published var scSaveMarkdown: Shortcut { didSet { Settings.scSaveMarkdown = scSaveMarkdown } }
     @Published var scTask: Shortcut    { didSet { Settings.scTask = scTask } }
     @Published var scPin: Shortcut     { didSet { Settings.scPin = scPin } }
     @Published var scColour: Shortcut  { didSet { Settings.scColour = scColour } }
@@ -174,6 +175,7 @@ final class SettingsModel: ObservableObject {
         scCycleDeck = Settings.scCycleDeck
         scClose = Settings.scClose
         scFind = Settings.scFind
+        scSaveMarkdown = Settings.scSaveMarkdown
         scTask = Settings.scTask
         scPin = Settings.scPin
         scColour = Settings.scColour
@@ -211,6 +213,7 @@ final class SettingsModel: ObservableObject {
                       ("capture", scCapture),
                       ("archiveNote", scArchiveNote), ("cycleDeck", scCycleDeck),
                       ("close", scClose), ("find", scFind),
+                      ("saveMarkdown", scSaveMarkdown),
                       ("task", scTask), ("pin", scPin), ("colour", scColour),
                       ("delete", scDelete), ("bigger", scBigger), ("smaller", scSmaller)]
             .filter { $0.0 != label }
@@ -294,6 +297,7 @@ struct SettingsView: View {
             shortcutRow(L10n.text("shortcut.archive_note"), model.scArchiveNote, "archiveNote", bare: true) { model.scArchiveNote = $0 }
             shortcutRow(L10n.text("action.delete"), model.scDelete, "delete", bare: true) { model.scDelete = $0 }
             shortcutRow(L10n.text("action.find"), model.scFind, "find", bare: true) { model.scFind = $0 }
+            shortcutRow(L10n.text("shortcut.save_markdown"), model.scSaveMarkdown, "saveMarkdown", bare: true) { model.scSaveMarkdown = $0 }
             shortcutRow(L10n.text("shortcut.toggle_task"), model.scTask, "task", bare: true) { model.scTask = $0 }
             shortcutRow(L10n.text("action.pin"), model.scPin, "pin", bare: true) { model.scPin = $0 }
             shortcutRow(L10n.text("action.cycle_colour"), model.scColour, "colour", bare: true) { model.scColour = $0 }

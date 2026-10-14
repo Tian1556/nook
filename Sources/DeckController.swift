@@ -540,6 +540,9 @@ final class DeckController: NSObject {
             if Settings.scCycleDeck.matches(event) {
                 self.cycleDeck(); return nil
             }
+            if Settings.scSaveMarkdown.matches(event) {
+                Transfer.saveCurrentNoteMarkdown(noteID: id); return nil
+            }
             if Settings.scDelete.matches(event) {
                 NoteStore.shared.delete(id: id); self.collapse(); return nil
             }

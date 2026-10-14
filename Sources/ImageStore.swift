@@ -1,5 +1,7 @@
 import Foundation
 import AppKit
+import ImageIO
+import UniformTypeIdentifiers
 
 /// Images referenced from note bodies live as plain files under
 /// `Application Support/Nook/Images`, one `<UUID>.png` (or original ext) per
@@ -7,6 +9,11 @@ import AppKit
 /// token. Keeping bytes out of SQLite keeps the encrypted database small and
 /// lets a single image be shared across notes.
 enum ImageStore {
+    struct ExportPayload {
+        let data: Data
+        let fileExtension: String
+    }
+
     static let scheme = "noty-img"
 
     /// Created lazily so an app that never embeds an image never makes the folder.
@@ -203,6 +210,25 @@ enum ImageStore {
     static func data(id: String) -> Data? {
         guard let url = existingFileURL(id: id) else { return nil }
         return try? Data(contentsOf: url)
+    }
+
+    /// Original bytes plus an extension derived from the image contents.
+    /// Corrupt or unsupported bytes fail here, before any export file changes.
+    static func exportPayload(id: String) -> ExportPayload? {
+        guard let url = existingFileURL(id: id),
+              let data = try? Data(contentsOf: url),
+              let ext = detectedFileExtension(for: data) else { return nil }
+        return ExportPayload(data: data, fileExtension: ext)
+    }
+
+    /// ImageIO inspects the bytes rather than trusting the source filename.
+    /// This covers PNG/JPEG/GIF as well as formats such as HEIC, TIFF and WebP
+    /// when the current macOS version supports them.
+    static func detectedFileExtension(for data: Data) -> String? {
+        guard !data.isEmpty,
+              let source = CGImageSourceCreateWithData(data as CFData, nil),
+              let type = CGImageSourceGetType(source) else { return nil }
+        return UTType(type as String)?.preferredFilenameExtension?.lowercased()
     }
 
     // MARK: - Deleting / listing
