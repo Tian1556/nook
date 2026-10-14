@@ -27,6 +27,8 @@ struct EditorStyleEngineTests {
         LocalizationTests.run { check($0, $1) }
         TaskMarkerTests.run { check($0, $1) }
         DeckNavigationTests.run { check($0, $1) }
+        OrderedListRenumbererTests.run { check($0, $1) }
+        OrderedListEditingTests.run { check($0, $1) }
         ImageInteractionTests.run { check($0, $1) }
         testCustomNoteTitleBehavior()
         PersistenceTests.run { check($0, $1) }

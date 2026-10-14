@@ -138,6 +138,8 @@ final class TaskTextView: NSTextView {
     /// coordinator can refresh it after every style pass.
     var imageOverlays: NoteImageOverlayManager?
 
+    private var applyingOrderedListRenumber = false
+
     override func deleteBackward(_ sender: Any?) {
         // A range selection means the user deliberately selected content —
         // delete it straight away; the image-object path is for carets only.
@@ -145,22 +147,45 @@ final class TaskTextView: NSTextView {
             deleteImageToken(token)
             return
         }
+        let selection = selectedRange()
+        let structural = deletionTouchesLineBreak(selection, forward: false)
         super.deleteBackward(sender)
+        if structural { renumberOrderedLists(around: selection.location) }
     }
 
     override func insertNewline(_ sender: Any?) {
-        if handleListAutoContinuationOnNewline() { return }
+        let location = selectedRange().location
+        if handleListAutoContinuationOnNewline() {
+            renumberOrderedLists(from: location, through: selectedRange().location)
+            return
+        }
         super.insertNewline(sender)
+        renumberOrderedLists(from: location, through: selectedRange().location)
     }
 
     override func insertTab(_ sender: Any?) {
-        if handleTabIndentation(shift: false) { return }
+        let location = selectedRange().location
+        if handleTabIndentation(shift: false) {
+            renumberOrderedLists(around: location)
+            return
+        }
         super.insertTab(sender)
     }
 
     override func insertBacktab(_ sender: Any?) {
-        if handleTabIndentation(shift: true) { return }
+        let location = selectedRange().location
+        if handleTabIndentation(shift: true) {
+            renumberOrderedLists(around: location)
+            return
+        }
         super.insertBacktab(sender)
+    }
+
+    override func cut(_ sender: Any?) {
+        let selection = selectedRange()
+        let structural = selectionContainsLineBreak(selection)
+        super.cut(sender)
+        if structural { renumberOrderedLists(around: selection.location) }
     }
 
     private func lineContentRange(for location: Int, in ns: NSString) -> (contentRange: NSRange, contentText: String) {
@@ -369,7 +394,56 @@ final class TaskTextView: NSTextView {
             deleteImageToken(token)
             return
         }
+        let selection = selectedRange()
+        let structural = deletionTouchesLineBreak(selection, forward: true)
         super.deleteForward(sender)
+        if structural { renumberOrderedLists(around: selection.location) }
+    }
+
+    private func selectionContainsLineBreak(_ selection: NSRange) -> Bool {
+        guard selection.length > 0 else { return false }
+        let ns = string as NSString
+        let safe = NSIntersectionRange(selection, NSRange(location: 0, length: ns.length))
+        guard safe.length > 0 else { return false }
+        let selected = ns.substring(with: safe)
+        return selected.contains("\n") || selected.contains("\r")
+    }
+
+    private func deletionTouchesLineBreak(_ selection: NSRange, forward: Bool) -> Bool {
+        if selectionContainsLineBreak(selection) { return true }
+        guard selection.length == 0 else { return false }
+        let ns = string as NSString
+        let location = forward ? selection.location : selection.location - 1
+        guard location >= 0, location < ns.length else { return false }
+        let character = ns.character(at: location)
+        return character == 10 || character == 13
+    }
+
+    private func renumberOrderedLists(around location: Int) {
+        renumberOrderedLists(from: location, through: location)
+    }
+
+    private func renumberOrderedLists(from start: Int, through end: Int) {
+        guard !applyingOrderedListRenumber, !hasMarkedText(), let storage = textStorage else { return }
+        let length = storage.length
+        let lower = min(max(0, min(start, end)), length)
+        let upper = min(max(lower, max(start, end)), length)
+        let affected = NSRange(location: lower, length: upper - lower)
+        let replacements = OrderedListRenumberer.replacements(
+            in: storage.string, affectedRange: affected)
+        guard !replacements.isEmpty else { return }
+
+        let correctedSelection = OrderedListRenumberer.adjustedSelection(
+            selectedRange(), for: replacements)
+        applyingOrderedListRenumber = true
+        defer { applyingOrderedListRenumber = false }
+        for replacement in replacements.reversed() {
+            guard shouldChangeText(in: replacement.range,
+                                   replacementString: replacement.text) else { continue }
+            storage.replaceCharacters(in: replacement.range, with: replacement.text)
+        }
+        didChangeText()
+        setSelectedRange(correctedSelection)
     }
 
     /// Deletes a hidden image token as one undoable edit. When the token
@@ -609,7 +683,15 @@ final class TaskTextView: NSTextView {
     override func paste(_ sender: Any?) {
         let ids = ImagePasteboard.imageIDs(from: .general)
         guard !ids.isEmpty else {
+            let selection = selectedRange()
+            let pasted = NSPasteboard.general.string(forType: .string) ?? ""
+            let structural = pasted.contains("\n") || pasted.contains("\r")
+                || selectionContainsLineBreak(selection)
             super.paste(sender)
+            if structural {
+                renumberOrderedLists(from: selection.location,
+                                     through: selectedRange().location)
+            }
             return
         }
         insertImageTokens(ids.map { ImageStore.token(id: $0, width: nil) })
