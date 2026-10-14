@@ -16,16 +16,17 @@ enum OrderedListRenumberer {
         let components: [Int]
     }
 
-    private static let pattern = try! NSRegularExpression(
+    static let lineExpression = try! NSRegularExpression(
         pattern: "^([ \\t]*)((?:\\d+\\.)*\\d+)([.)])([ \\t]+)(.*)$")
 
     static func replacements(in text: String, affectedRange: NSRange) -> [Replacement] {
         let ns = text as NSString
         guard ns.length > 0 else { return [] }
         let probe = expandedProbe(affectedRange, length: ns.length)
+        let searchRange = localSearchRange(in: ns, around: probe)
         var out: [Replacement] = []
 
-        for block in blocks(in: ns) where intersects(block, probe: probe) {
+        for block in blocks(in: ns, range: searchRange) where intersects(block, probe: probe) {
             var counters = block[0].components
             for item in block.dropFirst() {
                 let depth = item.components.count
@@ -72,12 +73,13 @@ enum OrderedListRenumberer {
         return result
     }
 
-    private static func blocks(in text: NSString) -> [[Item]] {
+    private static func blocks(in text: NSString, range: NSRange) -> [[Item]] {
         var blocks: [[Item]] = []
         var current: [Item] = []
-        var location = 0
+        var location = range.location
+        let limit = NSMaxRange(range)
 
-        while location < text.length {
+        while location < limit {
             var start = 0
             var end = 0
             var contentsEnd = 0
@@ -101,7 +103,7 @@ enum OrderedListRenumberer {
     private static func parse(_ line: String, at lineRange: NSRange) -> Item? {
         let ns = line as NSString
         let whole = NSRange(location: 0, length: ns.length)
-        guard let match = pattern.firstMatch(in: line, range: whole) else { return nil }
+        guard let match = lineExpression.firstMatch(in: line, range: whole) else { return nil }
         let raw = ns.substring(with: match.range(at: 2))
         let parts = raw.split(separator: ".")
         let components = parts.compactMap { Int($0) }
@@ -121,6 +123,44 @@ enum OrderedListRenumberer {
         let lower = max(0, start - 1)
         let upper = min(length, end + 1)
         return NSRange(location: lower, length: upper - lower)
+    }
+
+    /// Restricts parsing to the edited lines and any numbered lines directly
+    /// connected to their outer edges. A long note therefore pays only for the
+    /// list blocks touched by the structural edit.
+    private static func localSearchRange(in text: NSString, around probe: NSRange) -> NSRange {
+        var range = text.lineRange(for: probe)
+
+        while range.location > 0 {
+            let previous = lineRanges(in: text, containing: range.location - 1)
+            guard previous.full.location < range.location,
+                  parse(text.substring(with: previous.content), at: previous.content) != nil else {
+                break
+            }
+            range = NSRange(location: previous.full.location,
+                            length: NSMaxRange(range) - previous.full.location)
+        }
+
+        while NSMaxRange(range) < text.length {
+            let next = lineRanges(in: text, containing: NSMaxRange(range))
+            guard next.full.location >= NSMaxRange(range),
+                  parse(text.substring(with: next.content), at: next.content) != nil else {
+                break
+            }
+            range.length = NSMaxRange(next.full) - range.location
+        }
+        return range
+    }
+
+    private static func lineRanges(in text: NSString,
+                                   containing location: Int) -> (full: NSRange, content: NSRange) {
+        var start = 0
+        var end = 0
+        var contentsEnd = 0
+        text.getLineStart(&start, end: &end, contentsEnd: &contentsEnd,
+                          for: NSRange(location: location, length: 0))
+        return (NSRange(location: start, length: end - start),
+                NSRange(location: start, length: contentsEnd - start))
     }
 
     private static func intersects(_ block: [Item], probe: NSRange) -> Bool {

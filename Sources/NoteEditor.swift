@@ -139,6 +139,25 @@ final class TaskTextView: NSTextView {
     var imageOverlays: NoteImageOverlayManager?
 
     private var applyingOrderedListRenumber = false
+    private var pendingOrderedListRenumberRange: NSRange?
+
+    override func unmarkText() {
+        super.unmarkText()
+        flushPendingOrderedListRenumberIfReady()
+    }
+
+    override func insertText(_ insertString: Any, replacementRange: NSRange) {
+        super.insertText(insertString, replacementRange: replacementRange)
+        flushPendingOrderedListRenumberIfReady()
+    }
+
+    private func flushPendingOrderedListRenumberIfReady() {
+        guard !hasMarkedText(), let pending = pendingOrderedListRenumberRange else { return }
+        pendingOrderedListRenumberRange = nil
+        let selection = selectedRange()
+        renumberOrderedLists(from: min(pending.location, selection.location),
+                             through: max(NSMaxRange(pending), NSMaxRange(selection)))
+    }
 
     override func deleteBackward(_ sender: Any?) {
         // A range selection means the user deliberately selected content —
@@ -259,11 +278,13 @@ final class TaskTextView: NSTextView {
         }
 
         // 3. Ordered / Hierarchical numbered list (e.g. 1. / 1.1 / 1.1.1.)
-        let orderedPattern = try! NSRegularExpression(pattern: "^([ \\t]*)((?:\\d+\\.)*\\d+)[.)][ \\t]+(.*)$")
-        if let match = orderedPattern.firstMatch(in: lineText, range: NSRange(location: 0, length: (lineText as NSString).length)) {
+        if let match = OrderedListRenumberer.lineExpression.firstMatch(
+            in: lineText, range: NSRange(location: 0, length: (lineText as NSString).length)) {
             let indent = (lineText as NSString).substring(with: match.range(at: 1))
             let rawNumber = (lineText as NSString).substring(with: match.range(at: 2))
-            let body = (lineText as NSString).substring(with: match.range(at: 3)).trimmingCharacters(in: .whitespacesAndNewlines)
+            let delimiter = (lineText as NSString).substring(with: match.range(at: 3))
+            let spacing = (lineText as NSString).substring(with: match.range(at: 4))
+            let body = (lineText as NSString).substring(with: match.range(at: 5)).trimmingCharacters(in: .whitespacesAndNewlines)
             if body.isEmpty {
                 // Empty ordered item: exit list
                 let replacement = indent.isEmpty ? "" : indent
@@ -275,7 +296,7 @@ final class TaskTextView: NSTextView {
                 }
             } else {
                 let nextNumber = incrementNumberSection(rawNumber)
-                let nextPrefix = "\n\(indent)\(nextNumber). "
+                let nextPrefix = "\n\(indent)\(nextNumber)\(delimiter)\(spacing)"
                 if shouldChangeText(in: sel, replacementString: nextPrefix) {
                     storage.replaceCharacters(in: sel, with: nextPrefix)
                     didChangeText()
@@ -304,16 +325,18 @@ final class TaskTextView: NSTextView {
         let (lineRange, lineText) = lineContentRange(for: sel.location, in: ns)
 
         // Check if current line is an ordered list (e.g. "1. " -> "1.1 " on Tab, "1.1 " -> "1. " on Shift+Tab)
-        let orderedPattern = try! NSRegularExpression(pattern: "^([ \\t]*)((?:\\d+\\.)*\\d+)[.)][ \\t]+(.*)$")
-        if let match = orderedPattern.firstMatch(in: lineText, range: NSRange(location: 0, length: (lineText as NSString).length)) {
+        if let match = OrderedListRenumberer.lineExpression.firstMatch(
+            in: lineText, range: NSRange(location: 0, length: (lineText as NSString).length)) {
             let indent = (lineText as NSString).substring(with: match.range(at: 1))
             let numStr = (lineText as NSString).substring(with: match.range(at: 2))
-            let rest = (lineText as NSString).substring(with: match.range(at: 3))
+            let delimiter = (lineText as NSString).substring(with: match.range(at: 3))
+            let spacing = (lineText as NSString).substring(with: match.range(at: 4))
+            let rest = (lineText as NSString).substring(with: match.range(at: 5))
 
             if !shift {
                 // Tab: create deeper sub-level (1. -> 1.1., 1.1 -> 1.1.1.)
                 let newNum = numStr + ".1"
-                let newLine = "\(indent)\(newNum). \(rest)"
+                let newLine = "\(indent)\(newNum)\(delimiter)\(spacing)\(rest)"
                 if shouldChangeText(in: lineRange, replacementString: newLine) {
                     storage.replaceCharacters(in: lineRange, with: newLine)
                     didChangeText()
@@ -327,7 +350,7 @@ final class TaskTextView: NSTextView {
                 if parts.count > 1 {
                     parts.removeLast()
                     let newNum = parts.joined(separator: ".")
-                    let newLine = "\(indent)\(newNum). \(rest)"
+                    let newLine = "\(indent)\(newNum)\(delimiter)\(spacing)\(rest)"
                     if shouldChangeText(in: lineRange, replacementString: newLine) {
                         storage.replaceCharacters(in: lineRange, with: newLine)
                         didChangeText()
@@ -423,12 +446,17 @@ final class TaskTextView: NSTextView {
         renumberOrderedLists(from: location, through: location)
     }
 
-    private func renumberOrderedLists(from start: Int, through end: Int) {
-        guard !applyingOrderedListRenumber, !hasMarkedText(), let storage = textStorage else { return }
+    func renumberOrderedLists(from start: Int, through end: Int) {
+        guard !applyingOrderedListRenumber, let storage = textStorage else { return }
         let length = storage.length
         let lower = min(max(0, min(start, end)), length)
         let upper = min(max(lower, max(start, end)), length)
         let affected = NSRange(location: lower, length: upper - lower)
+        if hasMarkedText() {
+            pendingOrderedListRenumberRange = pendingOrderedListRenumberRange
+                .map { NSUnionRange($0, affected) } ?? affected
+            return
+        }
         let replacements = OrderedListRenumberer.replacements(
             in: storage.string, affectedRange: affected)
         guard !replacements.isEmpty else { return }
@@ -464,8 +492,10 @@ final class TaskTextView: NSTextView {
                 range = NSRange(location: range.location - 1, length: range.length + 1)
             }
         }
+        let structural = selectionContainsLineBreak(range)
         setSelectedRange(range)
         super.deleteBackward(nil)
+        if structural { renumberOrderedLists(around: range.location) }
     }
 
 
