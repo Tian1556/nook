@@ -26,7 +26,7 @@ SDK="$(xcrun --show-sdk-path --sdk macosx)"
 MODE="${1:-release}"
 
 MARKETING_VERSION="${MARKETING_VERSION:-1.9.2}"
-BUILD_NUMBER="${BUILD_NUMBER:-192}"
+BUILD_NUMBER="${BUILD_NUMBER:-199}"
 
 OPT="-O"
 [ "$MODE" = "debug" ] && OPT="-Onone"
