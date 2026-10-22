@@ -1249,7 +1249,7 @@ final class NoteImageOverlayManager: NSObject {
         let oldRanges = layoutDelegate.heights.map(\.range)
         layoutDelegate.heights = currentTokens(in: storage).map {
             let size = displaySize(for: $0.token)
-            return ($0.token.range, size.height, size.width)
+            return (layoutAnchor(for: $0.token.range, in: storage), size.height, size.width)
         }
         let changed = oldRanges + layoutDelegate.heights.map(\.range)
         for range in changed where range.location != NSNotFound {
@@ -1285,11 +1285,12 @@ final class NoteImageOverlayManager: NSObject {
 
         if !finished {
             overlay.showSize(width: width, height: height)
+            let anchor = layoutAnchor(for: slot.tokenRange, in: storage)
             layoutDelegate.heights = layoutDelegate.heights.map {
-                $0.range == slot.tokenRange
+                $0.range == anchor
                     ? (range: $0.range, height: height, width: width) : $0
             }
-            tv.layoutManager?.invalidateLayout(forCharacterRange: slot.tokenRange,
+            tv.layoutManager?.invalidateLayout(forCharacterRange: anchor,
                                                actualCharacterRange: nil)
             return
         }
@@ -1364,6 +1365,20 @@ final class NoteImageOverlayManager: NSObject {
 
     // MARK: Anchoring
 
+    /// Null glyphs immediately after a paragraph break can belong to the
+    /// preceding line fragment. The token's terminating newline is visible to
+    /// TextKit and reliably belongs to the image's own line, so both its height
+    /// reservation and its overlay must use that same anchor.
+    private func layoutAnchor(for tokenRange: NSRange, in storage: NSTextStorage) -> NSRange {
+        let end = NSMaxRange(tokenRange)
+        if end < storage.length,
+           let scalar = UnicodeScalar(storage.mutableString.character(at: end)),
+           CharacterSet.newlines.contains(scalar) {
+            return NSRange(location: end, length: 1)
+        }
+        return tokenRange
+    }
+
     private func currentTokens(in storage: NSTextStorage)
         -> [(token: (id: String, width: CGFloat?, range: NSRange), hidden: Bool)] {
         let length = storage.length
@@ -1398,7 +1413,7 @@ final class NoteImageOverlayManager: NSObject {
         for entry in currentTokens(in: storage) {
             let size = displaySize(for: entry.token)
             lm.ensureLayout(for: tc)
-            let glyphs = lm.glyphRange(forCharacterRange: entry.token.range,
+            let glyphs = lm.glyphRange(forCharacterRange: layoutAnchor(for: entry.token.range, in: storage),
                                        actualCharacterRange: nil)
             guard glyphs.length > 0, glyphs.location != NSNotFound else { continue }
             let used = lm.lineFragmentUsedRect(forGlyphAt: glyphs.location,

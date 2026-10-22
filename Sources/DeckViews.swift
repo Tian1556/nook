@@ -481,9 +481,8 @@ struct VerticalTabLabel: View {
         if usesUprightGlyphs {
             let fitted = VerticalLabelLayout.fittingRuns(for: text,
                                                          maxAdvance: availableAdvance)
-            let displayRuns = onRight ? fitted : Array(fitted.reversed())
             VStack(spacing: 0) {
-                ForEach(Array(displayRuns.enumerated()), id: \.offset) { _, run in
+                ForEach(Array(fitted.enumerated()), id: \.offset) { _, run in
                     runView(run, availableWidth: availableAdvance)
                 }
             }

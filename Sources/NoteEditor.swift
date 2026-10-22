@@ -785,7 +785,11 @@ final class TaskTextView: NSTextView {
         let ns = storage.string as NSString
         var range = selectedRange()
         if range.location == NSNotFound { range = NSRange(location: ns.length, length: 0) }
-        range = NSIntersectionRange(range, NSRange(location: 0, length: ns.length))
+        // An empty range at the end has no intersection with the document:
+        // NSIntersectionRange turns that valid caret position into {0, 0}.
+        // Clamp the bounds explicitly so insertion stays at the caret.
+        range.location = min(range.location, ns.length)
+        range.length = min(range.length, ns.length - range.location)
         let atLineStart = range.location == 0 || ns.character(at: range.location - 1) == 10
         let atLineEnd = NSMaxRange(range) >= ns.length
             || ns.character(at: NSMaxRange(range)) == 10
