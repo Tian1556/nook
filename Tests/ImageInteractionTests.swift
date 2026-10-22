@@ -9,6 +9,8 @@ enum ImageInteractionTests {
     private static var token: String { ImageStore.token(id: tokenID, width: nil) }
 
     static func run(_ check: (Bool, String) -> Void) {
+        imagesInsertAtSelection(check)
+        imageOnThirdLineKeepsEarlierTextVisible(check)
         tokenStaysHiddenOnCaretLine(check)
         tokenLineReservesImageSize(check)
         arrowKeysSnapAcrossToken(check)
@@ -53,6 +55,71 @@ enum ImageInteractionTests {
     }
 
     // MARK: Tests
+
+    private static func imageOnThirdLineKeepsEarlierTextVisible(_ check: (Bool, String) -> Void) {
+        for (source, suffix) in [("1.订单完成后显示金额\n2.第二行内容\n", ""),
+                                 ("第一行\n第二行\n", "图片后的文字")] {
+            let tv = makeView(source + suffix)
+            let scroll = NSScrollView(frame: tv.frame)
+            scroll.documentView = tv
+            let manager = NoteImageOverlayManager()
+            manager.attach(to: tv, scrollView: scroll)
+            tv.imageOverlays = manager
+            tv.setSelectedRange(NSRange(location: (source as NSString).length, length: 0))
+            tv.insertImageTokens([token])
+            style(tv)
+            manager.refresh()
+            check(tv.string.hasPrefix(source), "pasting on line three preserves both earlier lines")
+            guard let lm = tv.layoutManager, let overlay = tv.subviews.compactMap({ $0 as? NoteImageOverlayView }).first else {
+                check(false, "third-line image has an overlay")
+                continue
+            }
+            let second = (tv.string as NSString).range(of: source.contains("订单") ? "第二行内容" : "第二行")
+            let glyphs = lm.glyphRange(forCharacterRange: second, actualCharacterRange: nil)
+            let textRect = lm.boundingRect(forGlyphRange: glyphs, in: tv.textContainer!)
+                .offsetBy(dx: tv.textContainerOrigin.x, dy: tv.textContainerOrigin.y)
+            check(overlay.frame.minY >= textRect.maxY,
+                  "third-line image must not cover the second line: image \(overlay.frame), text \(textRect)")
+            if !suffix.isEmpty {
+                let after = (tv.string as NSString).range(of: suffix)
+                let afterGlyphs = lm.glyphRange(forCharacterRange: after, actualCharacterRange: nil)
+                let afterRect = lm.boundingRect(forGlyphRange: afterGlyphs, in: tv.textContainer!)
+                    .offsetBy(dx: tv.textContainerOrigin.x, dy: tv.textContainerOrigin.y)
+                check(afterRect.minY >= overlay.frame.maxY,
+                      "text after the image must flow below it: image \(overlay.frame), text \(afterRect)")
+            }
+        }
+    }
+
+    private static func imagesInsertAtSelection(_ check: (Bool, String) -> Void) {
+        let source = "开头😀\n中间\n末尾"
+        let ns = source as NSString
+        let middle = ns.range(of: "中间").location
+        let cases: [(String, NSRange, String)] = [
+            ("start", NSRange(location: 0, length: 0), token + "\n\n" + source),
+            ("middle", NSRange(location: middle, length: 0),
+             "开头😀\n" + token + "\n\n中间\n末尾"),
+            ("end", NSRange(location: ns.length, length: 0), source + "\n" + token + "\n"),
+            ("within a line", NSRange(location: middle + 1, length: 0),
+             "开头😀\n中\n" + token + "\n\n间\n末尾"),
+            ("selection", ns.range(of: "中间"), "开头😀\n" + token + "\n\n末尾")
+        ]
+        for (name, selection, expected) in cases {
+            let tv = makeView(source)
+            tv.setSelectedRange(selection)
+            tv.insertImageTokens([token])
+            check(tv.string == expected,
+                  "image inserts at \(name), got \(tv.string.debugDescription)")
+            let inserted = (expected as NSString).range(of: token)
+            let suffix = name == "end" || name == "selection" ? 1 : 2
+            check(tv.selectedRange() == NSRange(location: NSMaxRange(inserted) + suffix, length: 0),
+                  "caret follows the image at \(name)")
+        }
+        let empty = makeView("")
+        empty.insertImageTokens([token, token])
+        check(empty.string == token + "\n" + token + "\n",
+              "multiple images insert in order into an empty note")
+    }
 
     /// The caret landing on the token line must NOT reveal the markup.
     private static func tokenStaysHiddenOnCaretLine(_ check: (Bool, String) -> Void) {
