@@ -10,6 +10,7 @@ enum PersistenceTests {
         do {
             try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
             defer { try? FileManager.default.removeItem(at: directory) }
+            try testOpeningStoreDoesNotDeleteUnrelatedImages(directory, check)
             try testSharedEditing(directory, check)
             try testCryptoFailures(directory, check)
             try testExport(directory, check)
@@ -23,6 +24,27 @@ enum PersistenceTests {
                                   _ operation: () throws -> Void) {
         do { try operation(); check(false, message) }
         catch { /* Expected failure. */ }
+    }
+
+    private static func testOpeningStoreDoesNotDeleteUnrelatedImages(_ dir: URL,
+                                                                   _ check: (Bool, String) -> Void) throws {
+        let bytes = Data("image owned by another database".utf8)
+        guard let id = ImageStore.save(data: bytes, ext: "png") else {
+            check(false, "image cleanup fixture saves")
+            return
+        }
+        defer { ImageStore.delete(ids: [id]) }
+        let storage = Store(dbURL: dir.appendingPathComponent("image-cleanup.db"),
+                            keyURL: dir.appendingPathComponent("image-cleanup.key"))
+        let model = NoteStore(store: storage, seedWelcome: false, onError: { _ in })
+        check(model.notes.isEmpty, "cleanup fixture opens an empty database")
+        check(ImageStore.data(id: id) == bytes,
+              "opening a database must never delete images based on that database's references")
+        let note = model.create(body: ImageStore.token(id: id, width: nil))
+        check(model.flushAll(), "image note is persisted before reopening")
+        let reopened = NoteStore(store: storage, seedWelcome: false, onError: { _ in })
+        check(reopened.note(id: note.id)?.body == note.body && ImageStore.data(id: id) == bytes,
+              "reopening a saved note preserves both its image token and the file on disk")
     }
 
     private static func testSharedEditing(_ dir: URL, _ check: (Bool, String) -> Void) throws {

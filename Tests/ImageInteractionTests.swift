@@ -11,6 +11,8 @@ enum ImageInteractionTests {
     static func run(_ check: (Bool, String) -> Void) {
         imagesInsertAtSelection(check)
         imageOnThirdLineKeepsEarlierTextVisible(check)
+        doubleClickOpensImageWithoutChangingSelection(check)
+        previewUsesIndependentCopy(check)
         tokenStaysHiddenOnCaretLine(check)
         tokenLineReservesImageSize(check)
         arrowKeysSnapAcrossToken(check)
@@ -55,6 +57,57 @@ enum ImageInteractionTests {
     }
 
     // MARK: Tests
+
+    private static func doubleClickOpensImageWithoutChangingSelection(_ check: (Bool, String) -> Void) {
+        let overlay = NoteImageOverlayView(imageID: "test", image: NSImage(size: NSSize(width: 80, height: 60)))
+        var selections = 0
+        var opens = 0
+        overlay.onSelect = { _ in selections += 1 }
+        overlay.onOpen = { opens += 1 }
+        func click(_ count: Int) -> NSEvent {
+            NSEvent.mouseEvent(with: .leftMouseDown, location: NSPoint(x: 20, y: 20),
+                               modifierFlags: [], timestamp: 0, windowNumber: 0,
+                               context: nil, eventNumber: count, clickCount: count, pressure: 1)!
+        }
+        overlay.mouseDown(with: click(1))
+        check(selections == 1 && opens == 0, "single click still selects the image")
+        overlay.mouseDown(with: click(2))
+        check(selections == 1 && opens == 1, "double click opens the image without another selection edit")
+        overlay.startCropping(ratio: nil)
+        overlay.mouseDown(with: click(2))
+        check(opens == 1, "cropping does not launch Preview on double click")
+        let missing = NoteImageOverlayView(imageID: "missing", image: nil)
+        missing.onOpen = { opens += 1 }
+        missing.mouseDown(with: click(2))
+        check(opens == 1, "missing-image placeholders do not launch Preview")
+    }
+
+    private static func previewUsesIndependentCopy(_ check: (Bool, String) -> Void) {
+        let sample = NSImage(size: NSSize(width: 80, height: 60))
+        sample.lockFocus()
+        NSColor.blue.setFill()
+        NSRect(x: 0, y: 0, width: 80, height: 60).fill()
+        sample.unlockFocus()
+        guard let id = ImageStore.save(image: sample) else {
+            check(false, "preview fixture saves")
+            return
+        }
+        defer { ImageStore.delete(ids: [id]) }
+        let original = ImageStore.data(id: id)
+        guard let copy = ImageStore.previewCopyURL(id: id) else {
+            check(false, "Preview receives a readable copy")
+            return
+        }
+        defer { try? FileManager.default.removeItem(at: copy) }
+        check((try? Data(contentsOf: copy)) == original && copy.pathExtension == "png",
+              "preview preserves the image bytes and encoding")
+        try? Data("edited in Preview".utf8).write(to: copy)
+        check(ImageStore.data(id: id) == original, "editing the preview copy leaves the note image unchanged")
+        check(ImageStore.previewCopyURL(id: "../outside") == nil,
+              "preview rejects image ids outside the store")
+        check(ImageStore.previewCopyURL(id: UUID().uuidString) == nil,
+              "preview handles a missing image file")
+    }
 
     private static func imageOnThirdLineKeepsEarlierTextVisible(_ check: (Bool, String) -> Void) {
         for (source, suffix) in [("1.订单完成后显示金额\n2.第二行内容\n", ""),

@@ -8,6 +8,11 @@ struct EditorStyleEngineTests {
     private static var failures = 0
 
     static func main() {
+        #if !NOOK_TESTING
+        fputs("Refusing to run without -D NOOK_TESTING: tests must use isolated app data.\n", stderr)
+        exit(2)
+        #endif
+        defer { try? FileManager.default.removeItem(at: Paths.support) }
         testSingleCharacterScope()
         testNewlineBoundaries()
         testDistantRangesStayDisjoint()
