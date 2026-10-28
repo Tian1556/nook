@@ -8,8 +8,13 @@ import Darwin
 
 enum Paths {
     static let support: URL = {
+        #if NOOK_TESTING
+        let base = FileManager.default.temporaryDirectory
+            .appendingPathComponent("nook-tests-\(UUID().uuidString)", isDirectory: true)
+        #else
         let base = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask)[0]
             .appendingPathComponent("Nook", isDirectory: true)
+        #endif
         try? FileManager.default.createDirectory(at: base, withIntermediateDirectories: true)
         return base
     }()

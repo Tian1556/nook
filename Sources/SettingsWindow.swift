@@ -267,14 +267,43 @@ struct SettingsView: View {
         // One long scroll made twelve shortcut fields, nine deck controls and the
         // note settings compete for the same eye. Tabs keep those groups distinct.
         TabView {
-            pane { shortcutsTab }
-                .tabItem { Label(L10n.text("settings.shortcuts.tab"), systemImage: "command") }
-            pane { deckTab }
-                .tabItem { Label(L10n.text("settings.deck.tab"), systemImage: "menucard") }
-            pane { notesTab }
-                .tabItem { Label(L10n.text("settings.notes.tab"), systemImage: "textformat") }
+                pane { shortcutsTab }
+                    .tabItem { Label(L10n.text("settings.shortcuts.tab"), systemImage: "command") }
+                pane { deckTab }
+                    .tabItem { Label(L10n.text("settings.deck.tab"), systemImage: "menucard") }
+                pane { notesTab }
+                    .tabItem { Label(L10n.text("settings.notes.tab"), systemImage: "textformat") }
         }
         .frame(width: 600, height: 500)
+    }
+
+    private var archiveAccess: some View {
+        HStack(spacing: 12) {
+            Image(systemName: "archivebox.fill")
+                .font(.system(size: 23))
+                .foregroundStyle(.tint)
+                .accessibilityHidden(true)
+            VStack(alignment: .leading, spacing: 3) {
+                Text(L10n.text("settings.archive.title"))
+                    .font(.headline)
+                Text(L10n.text("settings.archive.help"))
+                    .font(.system(size: 11))
+                    .foregroundStyle(.secondary)
+            }
+            Spacer(minLength: 8)
+            VStack(spacing: 4) {
+                Button(L10n.text("settings.archive.open")) {
+                    LibraryWindow.shared.show(mode: .archive)
+                }
+                .buttonStyle(.borderedProminent)
+                if model.scArchive != .none {
+                    Text(model.scArchive.display)
+                        .font(.system(size: 11))
+                        .foregroundStyle(.secondary)
+                }
+            }
+        }
+        .padding(.vertical, 4)
     }
 
     // MARK: tabs
@@ -461,6 +490,9 @@ struct SettingsView: View {
             toggleRow(L10n.text("settings.notes.markdown"),
                       help: L10n.text("settings.notes.markdown_help"),
                       isOn: $model.markdown)
+        }
+        Section {
+            archiveAccess
         }
     }
 

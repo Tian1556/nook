@@ -30,7 +30,6 @@ final class NoteStore: ObservableObject {
         self.onError = onError
         do {
             notes = try store.load()
-            removeOrphanedImages()
             if notes.isEmpty && seedWelcome { seedWelcomeNote() }
         } catch {
             writable = false
@@ -214,15 +213,9 @@ final class NoteStore: ObservableObject {
         if !unreferenced.isEmpty { ImageStore.delete(ids: unreferenced.sorted()) }
     }
 
-    /// Quitting inside the undo window strands the pending note's images (the
-    /// row is already gone from SQLite, so undo cannot survive a relaunch).
-    /// Sweeping unreferenced files once at launch also covers any leak from a
-    /// crash between saving an image and persisting the body that uses it.
-    private func removeOrphanedImages() {
-        let used = Set(notes.flatMap { ImageStore.referencedIDs(in: $0.body) })
-        let orphans = ImageStore.allIDs().filter { !used.contains($0) }
-        if !orphans.isEmpty { ImageStore.delete(ids: orphans) }
-    }
+    // Loading a database must not sweep the shared image directory. Another
+    // database or process can own files absent from this model's snapshot.
+    // Only an explicit note deletion may remove its unreferenced images.
 
     /// Move a note `slots` positions up or down the deck, rewriting the order
     /// column densely so repeated drags cannot drift the values apart.

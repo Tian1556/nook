@@ -221,6 +221,24 @@ enum ImageStore {
         return ExportPayload(data: data, fileExtension: ext)
     }
 
+    /// Preview gets a disposable copy so editing there cannot alter a note's
+    /// stored image. Keep the original encoding and resolve ids through the
+    /// same validation used by exports.
+    static func previewCopyURL(id: String) -> URL? {
+        guard let payload = exportPayload(id: id) else { return nil }
+        let folder = FileManager.default.temporaryDirectory
+            .appendingPathComponent("Nook-Preview", isDirectory: true)
+        let url = folder.appendingPathComponent(UUID().uuidString)
+            .appendingPathExtension(payload.fileExtension)
+        do {
+            try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
+            try payload.data.write(to: url, options: .atomic)
+            return url
+        } catch {
+            return nil
+        }
+    }
+
     /// ImageIO inspects the bytes rather than trusting the source filename.
     /// This covers PNG/JPEG/GIF as well as formats such as HEIC, TIFF and WebP
     /// when the current macOS version supports them.

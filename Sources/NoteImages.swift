@@ -527,6 +527,7 @@ fileprivate final class NoteImageToolbarView: NSView {
     var onSetWidthFraction: (CGFloat) -> Void = { _ in }
     var onCopy: () -> Void = {}
 
+
     private(set) var isCropping = false
 
     // Normal mode views
@@ -798,6 +799,7 @@ final class NoteImageOverlayView: NSView {
     var onApplyCrop: (NSRect) -> Void = { _ in }
     var onSetWidthFraction: (CGFloat) -> Void = { _ in }
     var onCopy: () -> Void = {}
+    var onOpen: () -> Void = {}
 
     private(set) var isCropping = false
 
@@ -1079,6 +1081,10 @@ final class NoteImageOverlayView: NSView {
     }
 
     override func mouseDown(with event: NSEvent) {
+        if event.clickCount == 2, hasFile, !isCropping {
+            onOpen()
+            return
+        }
         onSelect(self)
     }
 
@@ -1450,6 +1456,7 @@ final class NoteImageOverlayManager: NSObject {
                     self?.handleDrag(key, point: point, finished: finished)
                 }
                 overlay.onCopy = { [weak self] in self?.copyImage(id: info.slot.id) }
+                overlay.onOpen = { [weak self] in self?.openImage(id: info.slot.id) }
                 overlay.onApplyCrop = { [weak self] norm in self?.applyCrop(key: key, normalizedRect: norm) }
                 overlay.onSetWidthFraction = { [weak self] f in self?.setWidthFraction(key: key, fraction: f) }
                 tv.addSubview(overlay)
@@ -1476,6 +1483,19 @@ final class NoteImageOverlayManager: NSObject {
         parkedCaret = caret
         tv.setSelectedRange(NSRange(location: caret, length: 0))
         tv.window?.makeFirstResponder(tv)
+    }
+
+    private func openImage(id: String) {
+        let workspace = NSWorkspace.shared
+        guard let application = workspace.urlForApplication(withBundleIdentifier: "com.apple.Preview"),
+              let url = ImageStore.previewCopyURL(id: id) else {
+            NSSound.beep()
+            return
+        }
+        workspace.open([url], withApplicationAt: application,
+                       configuration: NSWorkspace.OpenConfiguration()) { _, error in
+            if error != nil { DispatchQueue.main.async { NSSound.beep() } }
+        }
     }
 
     private func removeAll() {
