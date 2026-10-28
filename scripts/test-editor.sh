@@ -23,7 +23,7 @@ done
 
 # Tests only ever run on the machine that built them, so one native slice is
 # enough — a universal test binary doubles the compile for a slice nobody runs.
-swiftc -parse-as-library -swift-version 5 \
+swiftc -parse-as-library -swift-version 5 -D NOOK_TESTING \
     -target "$(uname -m)-apple-macosx15.0" \
     -sdk "$SDK" \
     "${APP_SOURCES[@]}" \
