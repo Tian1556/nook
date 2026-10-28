@@ -181,6 +181,9 @@
 "settings.shortcuts.tab" = "快捷键";
 
 "settings.window_title" = "Nook 设置";
+"settings.archive.title" = "归档便签";
+"settings.archive.help" = "查看已归档的便签，或恢复到便签栏。";
+"settings.archive.open" = "查看归档便签";
 
 "shortcut.all_notes" = "所有便笺";
 "shortcut.archive_note" = "归档便笺";
