@@ -181,6 +181,9 @@
 "settings.shortcuts.tab" = "Shortcuts";
 
 "settings.window_title" = "Nook Settings";
+"settings.archive.title" = "Archived Notes";
+"settings.archive.help" = "View archived notes or restore them to the deck.";
+"settings.archive.open" = "View Archived Notes";
 
 "shortcut.all_notes" = "All Notes";
 "shortcut.archive_note" = "Archive note";
